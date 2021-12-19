@@ -1,0 +1,6 @@
+__snapshots__/
+dist/
+coverage/
+node_modules/
+*.min.*
+package-lock.json

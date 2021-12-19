@@ -1,0 +1,8 @@
+__mocks__/
+__snapshots__/
+dist/
+coverage/
+node_modules/
+*.min.*
+jest.*.*
+package-lock.json
