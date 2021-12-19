@@ -1,8 +1,19 @@
 {
-  "name": "replaced-by-user-input",
-  "description": "replaced-by-user-input",
-  "version": "0.0.1",
-  "private": true,
+  "name": "emails-queue-service",
+  "author": "David Bowland",
+  "description": "Sends emails queued in SQS",
+  "version": "1.0.0",
+  "engines": {
+    "node": "^14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davidbowland/emails-queue-service.git"
+  },
+  "bugs": {
+    "url": "https://github.com/davidbowland/emails-queue-service/issues"
+  },
+  "homepage": "https://github.com/davidbowland/emails-queue-service#readme",
   "dependencies": {
     "aws-sdk": "^2.1046.0",
     "nodemailer": "^6.7.2"
@@ -11,6 +22,7 @@
     "@babel/core": "^7.16.5",
     "@babel/preset-env": "^7.16.5",
     "@babel/preset-typescript": "^7.16.5",
+    "@types/aws-lambda": "^8.10.88",
     "@types/jest": "^27.0.3",
     "@typescript-eslint/eslint-plugin": "^5.7.0",
     "@typescript-eslint/parser": "^5.7.0",
@@ -29,8 +41,8 @@
     "build": "npm run clean && tsc && cp package*.json dist/ && cd dist/ && NODE_ENV=production npm ci",
     "clean": "rm -rf dist coverage && NODE_ENV=test npm ci",
     "lint": "prettier --write . && eslint --fix . --resolve-plugins-relative-to .",
-    "prepare": "husky install",
-    "start": "tsc && sam local start-api --port 8001",
+    "prepare": "if [ \"$HUSKY\" != \"0\" ]; then husky install ; fi",
+    "start": "tsc && sam build && sam local invoke --event events/event-sqs.json",
     "test": "npm run lint && jest --colors"
   },
   "lint-staged": {

@@ -5,7 +5,7 @@
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  emails-queue
+  emails-queue-service
 
 # Transform section specifies one or more macros that AWS CloudFormation uses to process your template
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
@@ -19,17 +19,26 @@ Resources:
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-sqs-queues.html
   SimpleQueue:
     Type: AWS::SQS::Queue
+    Properties:
+      KmsMasterKeyId: sqs
+      MessageRetentionPeriod: 1209600 # 14 days
+      VisibilityTimeout: 60
 
   # This is the Lambda function definition associated with the source code: sqs-payload-logger.js. For all available properties, see
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-  SQSPayloadLogger:
+  SQSPayloadProcessor:
     Type: AWS::Serverless::Function
     Properties:
       Description: A Lambda function that logs the payload of messages sent to an associated SQS queue.
       Runtime: nodejs14.x
       Architectures:
         - x86_64
-      Handler: src/handlers/sqs-payload-logger.sqsPayloadLoggerHandler
+      Handler: handlers/sqs-payload-processor.sqsPayloadProcessorHandler
+      CodeUri: './dist'
+      Environment:
+        Variables:
+          EMAIL_BUCKET: emails-dbowland
+          EMAIL_REGION: us-east-1
       # This property associates this Lambda function with the SQS queue defined above, so that whenever the queue
       # receives a message, the Lambda function is invoked
       Events:
@@ -38,7 +47,13 @@ Resources:
           Properties:
             Queue: !GetAtt SimpleQueue.Arn
       MemorySize: 128
-      Timeout: 25 # Chosen to be less than the default SQS Visibility Timeout of 30 seconds
+      Timeout: 30
       Policies:
-        # Give Lambda basic execution Permission to the helloFromLambda
+        # Give Lambda basic execution Permission
         - AWSLambdaBasicExecutionRole
+        # Grant access to SQS queue
+        - SQSPollerPolicy:
+            QueueName: !GetAtt SimpleQueue.QueueName
+        # Grant access to SES identity
+        - SESCrudPolicy:
+            IdentityName: bowland.link
