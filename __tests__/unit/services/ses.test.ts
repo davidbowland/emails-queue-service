@@ -1,5 +1,5 @@
-import { emailData } from '@mocks'
-import { generateEmailFromData, sendRawEmail } from '@services/ses'
+import { emailData } from '../__mocks__'
+import { generateEmailFromData, sendRawEmail } from '../../../src/services/ses'
 
 const mockSendRawEmail = jest.fn()
 jest.mock('aws-sdk', () => ({

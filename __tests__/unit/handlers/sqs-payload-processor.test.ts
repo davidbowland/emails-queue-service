@@ -1,6 +1,6 @@
-import * as sqsPayloadProcessor from '@handlers/sqs-payload-processor'
-import { processSingleMessage, sqsPayloadProcessorHandler } from '@handlers/sqs-payload-processor'
-import { emailData, record } from '@mocks'
+import { emailData, record } from '../__mocks__'
+import * as sqsPayloadProcessor from '../../../src/handlers/sqs-payload-processor'
+import { processSingleMessage, sqsPayloadProcessorHandler } from '../../../src/handlers/sqs-payload-processor'
 
 const mockGenerateEmailFromData = jest.fn()
 const mockSendRawEmail = jest.fn()

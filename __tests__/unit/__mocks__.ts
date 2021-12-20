@@ -1,6 +1,6 @@
 import { SQSRecord } from 'aws-lambda'
 
-import { EmailData } from '@util/message-processing'
+import { EmailData } from '../../src/util/message-processing'
 
 export const emailData: EmailData = {
   from: 'A Person <email@address.com>',
