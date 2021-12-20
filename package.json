@@ -38,7 +38,7 @@
     "typescript": "^4.5.4"
   },
   "scripts": {
-    "build": "npm run clean && tsc && cp package*.json dist/ && cd dist/ && NODE_ENV=production npm ci",
+    "build": "npm run clean && tsc && cp package*.json dist/ && cd dist/ && HUSKY=0 NODE_ENV=production npm ci",
     "clean": "rm -rf dist coverage && NODE_ENV=test npm ci",
     "lint": "prettier --write . && eslint --fix . --resolve-plugins-relative-to .",
     "prepare": "if [ \"$HUSKY\" != \"0\" ]; then husky install ; fi",
