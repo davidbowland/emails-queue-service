@@ -42,7 +42,7 @@
     "clean": "rm -rf dist coverage && NODE_ENV=test npm ci",
     "lint": "prettier --write . && eslint --fix . --resolve-plugins-relative-to .",
     "prepare": "if [ \"$HUSKY\" != \"0\" ]; then husky install ; fi",
-    "start": "tsc && sam build && sam local invoke --event events/event-sqs.json",
+    "start": "tsc && HUSKY=0 sam build && sam local invoke --event events/event-sqs.json",
     "test": "npm run lint && jest --colors"
   },
   "lint-staged": {
