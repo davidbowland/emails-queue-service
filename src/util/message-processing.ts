@@ -7,7 +7,7 @@ export interface EmailData {
 }
 
 export interface MessageData {
-  email?: EmailData
+  uuid?: string
 }
 
 /* Body */

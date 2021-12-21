@@ -51,9 +51,12 @@ Resources:
       Policies:
         # Give Lambda basic execution Permission
         - AWSLambdaBasicExecutionRole
-        # Grant access to SQS queue
-        - SQSPollerPolicy:
-            QueueName: !GetAtt SimpleQueue.QueueName
+        # Grant access to S3 bucket
+        - S3CrudPolicy:
+            BucketName: emails-dbowland
         # Grant access to SES identity
         - SESCrudPolicy:
             IdentityName: bowland.link
+        # Grant access to SQS queue
+        - SQSPollerPolicy:
+            QueueName: !GetAtt SimpleQueue.QueueName
