@@ -34,3 +34,5 @@ export const record: SQSRecord = {
   eventSourceARN: 'arn:aws:sqs:us-east-1:123456789012:MyQueue',
   awsRegion: 'us-east-1',
 }
+
+export const uuid = 'aaaaa-uuuuu-uuuuu-iiiii-ddddd'
