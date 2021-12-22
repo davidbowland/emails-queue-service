@@ -14,6 +14,10 @@ jest.mock('../../../src/services/ses', () => ({
   generateEmailFromData: (data) => mockGenerateEmailFromData(data),
   sendRawEmail: (message) => mockSendRawEmail(message),
 }))
+jest.mock('../../../src/util/error-handling', () => ({
+  handleErrorNoDefault: () => () => undefined,
+  log: () => () => undefined,
+}))
 const mockGetDataFromRecord = jest.fn()
 jest.mock('../../../src/util/message-processing', () => ({
   getDataFromRecord: (record) => mockGetDataFromRecord(record),
@@ -62,12 +66,19 @@ describe('sqs-payload-processor', () => {
   describe('sqsPayloadProcessorHandler', () => {
     const record2 = { ...record, messageId: '8765rfg-76tfg-hui8yt-7trdf-gui567yfdf' }
     const event = { Records: [record, record2] }
-    const processSingleMessageSpy = jest.spyOn(sqsPayloadProcessor, 'processSingleMessage')
+    const mockProcessSingleMessageSpy = jest.spyOn(sqsPayloadProcessor, 'processSingleMessage')
 
     test('expect processSingleMessage to be called for each record', async () => {
       await sqsPayloadProcessorHandler(event, undefined, undefined)
-      expect(processSingleMessageSpy).toHaveBeenCalledWith(record)
-      expect(processSingleMessageSpy).toHaveBeenCalledWith(record2)
+      expect(mockProcessSingleMessageSpy).toHaveBeenCalledWith(record)
+      expect(mockProcessSingleMessageSpy).toHaveBeenCalledWith(record2)
+    })
+
+    test('expect processSingleMessage to be called for second record when first rejects', async () => {
+      mockProcessSingleMessageSpy.mockRejectedValueOnce(undefined)
+      await sqsPayloadProcessorHandler(event, undefined, undefined)
+      expect(mockProcessSingleMessageSpy).toHaveBeenCalledWith(record)
+      expect(mockProcessSingleMessageSpy).toHaveBeenCalledWith(record2)
     })
   })
 })
