@@ -15,9 +15,11 @@ export const processSingleMessage = (record: SQSRecord) =>
       .then(() => deleteContentFromS3(data.uuid))
   )
 
-export const sqsPayloadProcessorHandler: SQSHandler = (event: SQSEvent) =>
+export const sqsPayloadProcessorHandler: SQSHandler = (event: SQSEvent) => (
+  console.log('Received payload', event),
   event.Records.reduce(
     // Process emails one at a time, in order
     (previous, record) => previous.then(() => exports.processSingleMessage(record).catch(handleErrorNoDefault())),
     Promise.resolve(undefined)
   )
+)
