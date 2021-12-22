@@ -1,4 +1,4 @@
-import { emailData } from '../__mocks__'
+import { email } from '../__mocks__'
 import { generateEmailFromData, sendRawEmail } from '../../../src/services/ses'
 
 const mockSendRawEmail = jest.fn()
@@ -36,19 +36,19 @@ describe('ses', () => {
     })
 
     test('expect MailComposer called with data', async () => {
-      await generateEmailFromData(emailData)
-      expect(mockMailComposer).toHaveBeenCalledWith(emailData)
+      await generateEmailFromData(email)
+      expect(mockMailComposer).toHaveBeenCalledWith(email)
     })
 
     test('expect MailComposer result to be returned', async () => {
-      const result = await generateEmailFromData(emailData)
+      const result = await generateEmailFromData(email)
       expect(result).toEqual(expectedBuffer)
     })
 
     test('expect MailComposer to reject on error', async () => {
       const rejection = new Error()
       mockMailComposer.mockRejectedValueOnce(rejection)
-      await expect(generateEmailFromData(emailData)).rejects.toEqual(rejection)
+      await expect(generateEmailFromData(email)).rejects.toEqual(rejection)
     })
   })
 

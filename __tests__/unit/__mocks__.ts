@@ -2,7 +2,27 @@ import { SQSRecord } from 'aws-lambda'
 
 import { EmailData } from '../../src/util/message-processing'
 
-export const emailData: EmailData = {
+export const attachmentBuffer = Buffer.from("What's up party people?")
+
+export const attachment = {
+  checksum: 'jytgbni87ytgbnjkuy',
+  cid: 'ytghji87ytgbhj',
+  content: {
+    type: 'Buffer',
+    data: [...attachmentBuffer],
+  },
+  contentDisposition: 'attachment',
+  contentId: 'j7ytgbnjhgfdert',
+  contentType: 'text/plain',
+  filename: 'big.file',
+  headers: {
+    author: 'Shakespeare',
+  },
+  related: false,
+  size: 32_000,
+}
+
+export const email: EmailData = {
   from: 'A Person <email@address.com>',
   sender: 'A Person <email@address.com>',
   to: ['Another Person <another@address.com>'],
@@ -15,13 +35,13 @@ export const emailData: EmailData = {
   headers: {
     'Content-Type': 'text/html',
   },
-  attachments: [],
+  attachments: [attachment],
 }
 
 export const record: SQSRecord = {
   messageId: '19dd0b57-b21e-4ac1-bd88-01bbb068cb78',
   receiptHandle: 'MessageReceiptHandle',
-  body: JSON.stringify(emailData),
+  body: JSON.stringify(email),
   attributes: {
     ApproximateReceiveCount: '1',
     SentTimestamp: '1523232000000',

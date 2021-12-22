@@ -1,6 +1,7 @@
+/* eslint-disable */
 import { S3 } from 'aws-sdk'
 
-import { uuid } from '../__mocks__'
+import { attachmentBuffer, email, uuid } from '../__mocks__'
 import { emailBucket } from '../../../src/config'
 import * as s3Module from '../../../src/services/s3'
 import { deleteContentFromS3, deleteS3Object, fetchContentFromS3, getS3Object } from '../../../src/services/s3'
@@ -37,6 +38,13 @@ describe('S3', () => {
     test('expect parsed JSON returned', async () => {
       const result = await fetchContentFromS3(uuid)
       expect(result).toEqual(expectedResult)
+    })
+
+    test('expect Buffer attachments parsed accordingly', async () => {
+      getS3Object(key) // Clear existing mock value
+      mockGetS3Object.mockResolvedValueOnce(JSON.stringify(email))
+      const result = await fetchContentFromS3(uuid)
+      expect(result.attachments[0].content).toEqual(attachmentBuffer)
     })
   })
 

@@ -1,4 +1,4 @@
-import { emailData, record, uuid } from '../__mocks__'
+import { email, record, uuid } from '../__mocks__'
 import * as sqsPayloadProcessor from '../../../src/handlers/sqs-payload-processor'
 import { processSingleMessage, sqsPayloadProcessorHandler } from '../../../src/handlers/sqs-payload-processor'
 
@@ -28,7 +28,7 @@ describe('sqs-payload-processor', () => {
     const expectedBuffer = Buffer.from('hello!')
 
     beforeAll(() => {
-      mockFetchContentFromS3.mockResolvedValue(emailData)
+      mockFetchContentFromS3.mockResolvedValue(email)
       mockGenerateEmailFromData.mockResolvedValue(expectedBuffer)
       mockSendRawEmail.mockResolvedValue(undefined)
     })
@@ -45,7 +45,7 @@ describe('sqs-payload-processor', () => {
 
     test('expect mockGenerateEmailFromData to be called with output from fetchContentFromS3', async () => {
       await processSingleMessage(record)
-      expect(mockGenerateEmailFromData).toHaveBeenCalledWith(emailData)
+      expect(mockGenerateEmailFromData).toHaveBeenCalledWith(email)
     })
 
     test('expect sendRawEmail to be called with output from generateEmaiFromData', async () => {
