@@ -20,7 +20,8 @@ Resources:
   SimpleQueue:
     Type: AWS::SQS::Queue
     Properties:
-      # KmsMasterKeyId: alias/aws/sqs
+      FifoQueue: true
+      KmsMasterKeyId: alias/aws/sqs
       MessageRetentionPeriod: 1209600 # 14 days
       VisibilityTimeout: 60
 
@@ -47,7 +48,7 @@ Resources:
           Properties:
             Queue: !GetAtt SimpleQueue.Arn
       MemorySize: 128
-      Timeout: 30
+      Timeout: 60
       Policies:
         # Give Lambda basic execution Permission
         - AWSLambdaBasicExecutionRole
