@@ -26,25 +26,31 @@ describe('S3', () => {
     const expectedResult = { Hello: 'world' }
     const mockGetS3Object = jest.spyOn(s3Module, 'getS3Object')
 
-    beforeEach(() => {
-      mockGetS3Object.mockResolvedValueOnce(JSON.stringify(expectedResult))
-    })
-
     test('expect correct key passed to getS3Object', async () => {
+      mockGetS3Object.mockResolvedValueOnce(JSON.stringify(expectedResult))
       await fetchContentFromS3(uuid)
       expect(mockGetS3Object).toHaveBeenCalledWith(`queue/${uuid}`)
     })
 
     test('expect parsed JSON returned', async () => {
+      mockGetS3Object.mockResolvedValueOnce(JSON.stringify(expectedResult))
       const result = await fetchContentFromS3(uuid)
       expect(result).toEqual(expectedResult)
     })
 
     test('expect Buffer attachments parsed accordingly', async () => {
-      getS3Object(key) // Clear existing mock value
       mockGetS3Object.mockResolvedValueOnce(JSON.stringify(email))
       const result = await fetchContentFromS3(uuid)
       expect(result.attachments[0].content).toEqual(attachmentBuffer)
+    })
+
+    test('expect non-Buffer attachments parsed accordingly', async () => {
+      const content = 'colorless green ideas'
+      const attachment = { ...email.attachments[0], content }
+      mockGetS3Object.mockResolvedValueOnce(JSON.stringify({ ...email, attachments: [attachment] }))
+
+      const result = await fetchContentFromS3(uuid)
+      expect(result.attachments[0].content).toEqual(content)
     })
   })
 
