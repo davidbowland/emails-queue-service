@@ -46,6 +46,7 @@ Resources:
         SQSQueueEvent:
           Type: SQS
           Properties:
+            BatchSize: 7
             Queue: !GetAtt SimpleQueue.Arn
       MemorySize: 128
       Timeout: 60

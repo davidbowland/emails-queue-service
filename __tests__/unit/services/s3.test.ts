@@ -1,6 +1,3 @@
-/* eslint-disable */
-import { S3 } from 'aws-sdk'
-
 import { attachmentBuffer, email, uuid } from '../__mocks__'
 import { emailBucket } from '../../../src/config'
 import * as s3Module from '../../../src/services/s3'
@@ -10,8 +7,8 @@ const mockDeleteObject = jest.fn()
 const mockGetObject = jest.fn()
 jest.mock('aws-sdk', () => ({
   S3: jest.fn(() => ({
-    deleteObject: (params: S3.Types.DeleteObjectRequest) => ({ promise: () => mockDeleteObject(params) }),
-    getObject: (params: S3.Types.GetObjectRequest) => ({ promise: () => mockGetObject(params) }),
+    deleteObject: (...args) => ({ promise: () => mockDeleteObject(...args) }),
+    getObject: (...args) => ({ promise: () => mockGetObject(...args) }),
   })),
 }))
 
@@ -98,12 +95,6 @@ describe('S3', () => {
 
     test('expect empty result when body missing', async () => {
       mockGetObject.mockResolvedValueOnce({})
-      const result = await getS3Object(key)
-      expect(result).toEqual('')
-    })
-
-    test('expect empty result when promise rejects', async () => {
-      mockGetObject.mockRejectedValueOnce({})
       const result = await getS3Object(key)
       expect(result).toEqual('')
     })
