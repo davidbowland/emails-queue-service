@@ -3,7 +3,9 @@ import { getDataFromRecord } from '../../../src/util/message-processing'
 
 const mockHandleErrorWithDefault = jest.fn()
 jest.mock('@util/error-handling', () => ({
-  handleErrorWithDefault: (value) => (message) => (mockHandleErrorWithDefault(message), value),
+  handleErrorWithDefault:
+    (value) =>
+      (...args) => (mockHandleErrorWithDefault(...args), value),
 }))
 
 describe('message-processing', () => {

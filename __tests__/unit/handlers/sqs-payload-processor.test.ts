@@ -5,22 +5,23 @@ import { processSingleMessage, sqsPayloadProcessorHandler } from '../../../src/h
 const mockDeleteContentFromS3 = jest.fn()
 const mockFetchContentFromS3 = jest.fn()
 jest.mock('../../../src/services/s3', () => ({
-  deleteContentFromS3: (uuid) => mockDeleteContentFromS3(uuid),
-  fetchContentFromS3: (uuid) => mockFetchContentFromS3(uuid),
+  deleteContentFromS3: (...args) => mockDeleteContentFromS3(...args),
+  fetchContentFromS3: (...args) => mockFetchContentFromS3(...args),
 }))
 const mockGenerateEmailFromData = jest.fn()
+const mockSendErrorEmail = jest.fn()
 const mockSendRawEmail = jest.fn()
 jest.mock('../../../src/services/ses', () => ({
-  generateEmailFromData: (data) => mockGenerateEmailFromData(data),
-  sendRawEmail: (message) => mockSendRawEmail(message),
+  generateEmailFromData: (...args) => mockGenerateEmailFromData(...args),
+  sendErrorEmail: (...args) => mockSendErrorEmail(...args),
+  sendRawEmail: (...args) => mockSendRawEmail(...args),
 }))
 jest.mock('../../../src/util/error-handling', () => ({
-  handleErrorNoDefault: () => () => undefined,
   log: () => () => undefined,
 }))
 const mockGetDataFromRecord = jest.fn()
 jest.mock('../../../src/util/message-processing', () => ({
-  getDataFromRecord: (record) => mockGetDataFromRecord(record),
+  getDataFromRecord: (...args) => mockGetDataFromRecord(...args),
 }))
 
 describe('sqs-payload-processor', () => {
@@ -79,6 +80,14 @@ describe('sqs-payload-processor', () => {
       await sqsPayloadProcessorHandler(event, undefined, undefined)
       expect(mockProcessSingleMessageSpy).toHaveBeenCalledWith(record)
       expect(mockProcessSingleMessageSpy).toHaveBeenCalledWith(record2)
+    })
+
+    test('expect sendErrorEmail to be called when a message rejects', async () => {
+      const error = 'big-fuzzy-error'
+      mockProcessSingleMessageSpy.mockRejectedValueOnce(error)
+      await sqsPayloadProcessorHandler(event, undefined, undefined)
+      expect(mockProcessSingleMessageSpy).toHaveBeenCalledWith(record)
+      expect(mockSendErrorEmail).toHaveBeenCalledWith(event, error)
     })
   })
 })

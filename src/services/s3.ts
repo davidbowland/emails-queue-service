@@ -1,7 +1,6 @@
 import { S3 } from 'aws-sdk'
 
 import { emailBucket } from '../config'
-import { handleErrorWithDefault } from '../util/error-handling'
 import { EmailData } from '../util/message-processing'
 
 const s3 = new S3({ apiVersion: '2006-03-01' })
@@ -9,24 +8,24 @@ export interface Attachment {
   [key: string]: { [key: string]: string | Buffer }
 }
 
-const getContentFromAttachment = (attachment: Attachment) =>
+const getFromS3ThenDelete = (key: string) =>
+  exports.getS3Object(key).then((content) => exports.deleteS3Object(key).then(() => content))
+
+const getContentFromAttachment = (attachment: Attachment): Promise<string | Buffer> =>
   Promise.resolve(
     attachment.content.type === 'Buffer'
       ? Buffer.from(attachment.content.data)
-      : exports
-        .getS3Object(attachment.content as unknown as string)
-        .then((content) => exports.deleteS3Object(attachment.content).then(() => content))
+      : getFromS3ThenDelete(attachment.content as unknown as string)
   )
 
+const transformSingleAttachment = (attachment: Attachment) =>
+  getContentFromAttachment(attachment).then((content) => ({
+    ...attachment,
+    content,
+  }))
+
 const transformAttachmentBuffers = (email: EmailData) =>
-  email.attachments
-    ? (email.attachments as Attachment[]).map((attachment) =>
-      getContentFromAttachment(attachment).then((content) => ({
-        ...attachment,
-        content,
-      }))
-    )
-    : []
+  email.attachments ? (email.attachments as Attachment[]).map(transformSingleAttachment) : []
 
 export const fetchContentFromS3 = (uuid: string): Promise<EmailData> =>
   exports
@@ -49,7 +48,6 @@ export const getS3Object = (key: string): Promise<string | Buffer> =>
     .getObject({ Bucket: emailBucket, Key: key })
     .promise()
     .then((result) => (result.Body ?? '') as string)
-    .catch(handleErrorWithDefault(''))
 
 /* Delete */
 

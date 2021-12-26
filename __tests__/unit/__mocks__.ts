@@ -55,4 +55,6 @@ export const record: SQSRecord = {
   awsRegion: 'us-east-1',
 }
 
+export const event = { Records: [record] }
+
 export const uuid = 'aaaaa-uuuuu-uuuuu-iiiii-ddddd'

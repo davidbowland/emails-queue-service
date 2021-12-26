@@ -16,6 +16,7 @@
   "homepage": "https://github.com/davidbowland/emails-queue-service#readme",
   "dependencies": {
     "aws-sdk": "^2.1046.0",
+    "escape-html": "^1.0.3",
     "nodemailer": "^6.7.2"
   },
   "devDependencies": {
