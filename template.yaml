@@ -62,3 +62,10 @@ Resources:
         # Grant access to SQS queue
         - SQSPollerPolicy:
             QueueName: !GetAtt SimpleQueue.QueueName
+
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: [SQSPayloadProcessor]
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${SQSPayloadProcessor}
+      RetentionInDays: 90
