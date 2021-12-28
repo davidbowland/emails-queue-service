@@ -1,66 +1,56 @@
-import { email, record, uuid } from '../__mocks__'
-import * as sqsPayloadProcessor from '../../../src/handlers/sqs-payload-processor'
-import { processSingleMessage, sqsPayloadProcessorHandler } from '../../../src/handlers/sqs-payload-processor'
+import { mocked } from 'jest-mock'
 
-const mockDeleteContentFromS3 = jest.fn()
-const mockFetchContentFromS3 = jest.fn()
-jest.mock('../../../src/services/s3', () => ({
-  deleteContentFromS3: (...args) => mockDeleteContentFromS3(...args),
-  fetchContentFromS3: (...args) => mockFetchContentFromS3(...args),
-}))
-const mockGenerateEmailFromData = jest.fn()
-const mockSendErrorEmail = jest.fn()
-const mockSendRawEmail = jest.fn()
-jest.mock('../../../src/services/ses', () => ({
-  generateEmailFromData: (...args) => mockGenerateEmailFromData(...args),
-  sendErrorEmail: (...args) => mockSendErrorEmail(...args),
-  sendRawEmail: (...args) => mockSendRawEmail(...args),
-}))
-jest.mock('../../../src/util/error-handling', () => ({
+import { email, record, uuid } from '../__mocks__'
+import * as sqsPayloadProcessor from '@handlers/sqs-payload-processor'
+import { processSingleMessage, sqsPayloadProcessorHandler } from '@handlers/sqs-payload-processor'
+import * as s3 from '@services/s3'
+import * as ses from '@services/ses'
+import * as messageProcessing from '@util/message-processing'
+
+jest.mock('@services/s3')
+jest.mock('@services/ses')
+jest.mock('@util/error-handling', () => ({
   log: () => () => undefined,
 }))
-const mockGetDataFromRecord = jest.fn()
-jest.mock('../../../src/util/message-processing', () => ({
-  getDataFromRecord: (...args) => mockGetDataFromRecord(...args),
-}))
+jest.mock('@util/message-processing')
 
 describe('sqs-payload-processor', () => {
   beforeAll(() => {
-    mockGetDataFromRecord.mockResolvedValue({ uuid })
+    mocked(messageProcessing).getDataFromRecord.mockResolvedValue({ uuid })
   })
 
   describe('processSingleMessage', () => {
     const expectedBuffer = Buffer.from('hello!')
 
     beforeAll(() => {
-      mockFetchContentFromS3.mockResolvedValue(email)
-      mockGenerateEmailFromData.mockResolvedValue(expectedBuffer)
-      mockSendRawEmail.mockResolvedValue(undefined)
+      mocked(s3).fetchContentFromS3.mockResolvedValue(email)
+      mocked(ses).generateEmailFromData.mockResolvedValue(expectedBuffer)
+      mocked(ses).sendRawEmail.mockResolvedValue(undefined)
     })
 
     test('expect getDataFromRecord to be called with input', async () => {
       await processSingleMessage(record)
-      expect(mockGetDataFromRecord).toHaveBeenCalledWith(record)
+      expect(mocked(messageProcessing).getDataFromRecord).toHaveBeenCalledWith(record)
     })
 
     test('expect fetchContentFromS3 to be called with output from getDataFromRecord', async () => {
       await processSingleMessage(record)
-      expect(mockFetchContentFromS3).toHaveBeenCalledWith(uuid)
+      expect(mocked(s3).fetchContentFromS3).toHaveBeenCalledWith(uuid)
     })
 
     test('expect mockGenerateEmailFromData to be called with output from fetchContentFromS3', async () => {
       await processSingleMessage(record)
-      expect(mockGenerateEmailFromData).toHaveBeenCalledWith(email)
+      expect(mocked(ses).generateEmailFromData).toHaveBeenCalledWith(email)
     })
 
     test('expect sendRawEmail to be called with output from generateEmaiFromData', async () => {
       await processSingleMessage(record)
-      expect(mockSendRawEmail).toHaveBeenCalledWith(expectedBuffer)
+      expect(mocked(ses).sendRawEmail).toHaveBeenCalledWith(expectedBuffer)
     })
 
     test('expect deleteContentFromS3 to be called', async () => {
       await processSingleMessage(record)
-      expect(mockDeleteContentFromS3).toHaveBeenCalledWith(uuid)
+      expect(mocked(s3).deleteContentFromS3).toHaveBeenCalledWith(uuid)
     })
   })
 
@@ -87,7 +77,7 @@ describe('sqs-payload-processor', () => {
       mockProcessSingleMessageSpy.mockRejectedValueOnce(error)
       await sqsPayloadProcessorHandler(event, undefined, undefined)
       expect(mockProcessSingleMessageSpy).toHaveBeenCalledWith(record)
-      expect(mockSendErrorEmail).toHaveBeenCalledWith(event, error)
+      expect(mocked(ses).sendErrorEmail).toHaveBeenCalledWith(event, error)
     })
   })
 })

@@ -1,5 +1,5 @@
 import { email, record } from '../__mocks__'
-import { getDataFromRecord } from '../../../src/util/message-processing'
+import { getDataFromRecord } from '@util/message-processing'
 
 const mockHandleErrorWithDefault = jest.fn()
 jest.mock('@util/error-handling', () => ({

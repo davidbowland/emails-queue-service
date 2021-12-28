@@ -1,7 +1,7 @@
 import { attachmentBuffer, email, uuid } from '../__mocks__'
-import { emailBucket } from '../../../src/config'
-import * as s3Module from '../../../src/services/s3'
-import { deleteContentFromS3, deleteS3Object, fetchContentFromS3, getS3Object } from '../../../src/services/s3'
+import { emailBucket } from '@config'
+import * as s3Module from '@services/s3'
+import { deleteContentFromS3, deleteS3Object, fetchContentFromS3, getS3Object } from '@services/s3'
 
 const mockDeleteObject = jest.fn()
 const mockGetObject = jest.fn()
@@ -11,8 +11,7 @@ jest.mock('aws-sdk', () => ({
     getObject: (...args) => ({ promise: () => mockGetObject(...args) }),
   })),
 }))
-
-jest.mock('../../../src/util/error-handling', () => ({
+jest.mock('@util/error-handling', () => ({
   handleErrorWithDefault: (value) => () => value,
 }))
 

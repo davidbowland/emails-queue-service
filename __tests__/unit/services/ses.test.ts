@@ -1,8 +1,8 @@
 import escape from 'escape-html'
 
 import { email, event } from '../__mocks__'
-import * as sesService from '../../../src/services/ses'
-import { generateEmailFromData, sendErrorEmail, sendRawEmail } from '../../../src/services/ses'
+import * as sesService from '@services/ses'
+import { generateEmailFromData, sendErrorEmail, sendRawEmail } from '@services/ses'
 
 const mockSendRawEmail = jest.fn()
 jest.mock('aws-sdk', () => ({
