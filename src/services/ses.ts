@@ -4,8 +4,8 @@ import escape from 'escape-html'
 import MailComposer from 'nodemailer/lib/mail-composer'
 
 import { emailRegion, notificationFrom, notificationTarget } from '../config'
-import { handleErrorNoDefault } from '../util/error-handling'
-import { EmailData } from '../util/message-processing'
+import { EmailData } from '../types'
+import { logError } from '../utils/logging'
 
 const ses = new SES({ apiVersion: '2010-12-01', region: emailRegion })
 
@@ -18,7 +18,7 @@ export const generateEmailFromData = (data: EmailData): Promise<Buffer> =>
       .build((err: Error | null, message: Buffer) => (err ? reject(err) : resolve(message)))
   )
 
-export const sendRawEmail = (message: Buffer): Promise<SES.SendRawEmailResponse | unknown> =>
+export const sendRawEmail = (message: Buffer): Promise<SES.SendRawEmailResponse> =>
   ses.sendRawEmail({ RawMessage: { Data: message } }).promise()
 
 /* Error */
@@ -28,7 +28,7 @@ const convertErrorToText = (event: SQSEvent, error: unknown): string =>
     error as string
   )}`
 
-export const sendErrorEmail = (event: SQSEvent, error: Error) =>
+export const sendErrorEmail = (event: SQSEvent, error: Error): Promise<string> =>
   Promise.resolve(convertErrorToText(event, error))
     .then((text) => ({
       from: notificationFrom,
@@ -41,5 +41,5 @@ export const sendErrorEmail = (event: SQSEvent, error: Error) =>
     }))
     .then(exports.generateEmailFromData)
     .then(exports.sendRawEmail)
-    .catch(handleErrorNoDefault())
+    .catch(logError)
     .then(() => `${error}`)

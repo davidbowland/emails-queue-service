@@ -5,17 +5,17 @@ import * as sqsPayloadProcessor from '@handlers/sqs-payload-processor'
 import { processSingleMessage, sqsPayloadProcessorHandler } from '@handlers/sqs-payload-processor'
 import * as s3 from '@services/s3'
 import * as ses from '@services/ses'
-import * as messageProcessing from '@util/message-processing'
+import * as logging from '@utils/logging'
+import * as messageProcessing from '@utils/message-processing'
 
 jest.mock('@services/s3')
 jest.mock('@services/ses')
-jest.mock('@util/error-handling', () => ({
-  log: () => () => undefined,
-}))
-jest.mock('@util/message-processing')
+jest.mock('@utils/logging')
+jest.mock('@utils/message-processing')
 
 describe('sqs-payload-processor', () => {
   beforeAll(() => {
+    mocked(logging).log.mockResolvedValue(undefined)
     mocked(messageProcessing).getDataFromRecord.mockResolvedValue({ uuid })
   })
 

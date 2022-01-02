@@ -11,9 +11,6 @@ jest.mock('aws-sdk', () => ({
     getObject: (...args) => ({ promise: () => mockGetObject(...args) }),
   })),
 }))
-jest.mock('@util/error-handling', () => ({
-  handleErrorWithDefault: (value) => () => value,
-}))
 
 describe('S3', () => {
   const key = 'prefix/key'

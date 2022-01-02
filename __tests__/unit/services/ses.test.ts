@@ -25,10 +25,6 @@ jest.mock('nodemailer/lib/mail-composer', () =>
     }),
   }))
 )
-const mockHandleErrorNoDefault = jest.fn()
-jest.mock('@util/error-handling', () => ({
-  handleErrorNoDefault: () => (message) => (mockHandleErrorNoDefault(message), undefined),
-}))
 
 describe('ses', () => {
   const expectedBuffer = Buffer.from('sup?')

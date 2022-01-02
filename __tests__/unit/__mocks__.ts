@@ -1,6 +1,4 @@
-import { SQSRecord } from 'aws-lambda'
-
-import { EmailData } from '../../src/util/message-processing'
+import { EmailData, SQSRecord } from '@types'
 
 export const attachmentBuffer = Buffer.from("What's up party people?")
 
