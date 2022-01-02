@@ -1,14 +1,11 @@
 import { S3 } from 'aws-sdk'
 
 import { emailBucket } from '../config'
-import { EmailData } from '../util/message-processing'
+import { Attachment, AttachmentContent, EmailData } from '../types'
 
 const s3 = new S3({ apiVersion: '2006-03-01' })
-export interface Attachment {
-  [key: string]: { [key: string]: string | Buffer }
-}
 
-const getFromS3ThenDelete = (key: string) =>
+const getFromS3ThenDelete = (key: string): string | Buffer =>
   exports.getS3Object(key).then((content) => exports.deleteS3Object(key).then(() => content))
 
 const getContentFromAttachment = (attachment: Attachment): Promise<string | Buffer> =>
@@ -18,14 +15,22 @@ const getContentFromAttachment = (attachment: Attachment): Promise<string | Buff
       : getFromS3ThenDelete(attachment.content as unknown as string)
   )
 
-const transformSingleAttachment = (attachment: Attachment) =>
+const transformSingleAttachment = (attachment: Attachment): Promise<AttachmentContent> =>
   getContentFromAttachment(attachment).then((content) => ({
     ...attachment,
     content,
   }))
 
-const transformAttachmentBuffers = (email: EmailData) =>
+const transformAttachmentBuffers = (email: EmailData): Promise<AttachmentContent>[] =>
   email.attachments ? (email.attachments as Attachment[]).map(transformSingleAttachment) : []
+
+/* Get */
+
+export const getS3Object = (key: string): Promise<string | Buffer> =>
+  s3
+    .getObject({ Bucket: emailBucket, Key: key })
+    .promise()
+    .then((result) => (result.Body ?? '') as string)
 
 export const fetchContentFromS3 = (uuid: string): Promise<EmailData> =>
   exports
@@ -38,18 +43,10 @@ export const fetchContentFromS3 = (uuid: string): Promise<EmailData> =>
       }))
     )
 
-export const deleteContentFromS3 = (uuid: string): Promise<S3.DeleteObjectOutput> =>
-  exports.deleteS3Object(`queue/${uuid}`)
-
-/* Get */
-
-export const getS3Object = (key: string): Promise<string | Buffer> =>
-  s3
-    .getObject({ Bucket: emailBucket, Key: key })
-    .promise()
-    .then((result) => (result.Body ?? '') as string)
-
 /* Delete */
 
 export const deleteS3Object = (key: string): Promise<S3.DeleteObjectOutput> =>
   s3.deleteObject({ Bucket: emailBucket, Key: key }).promise()
+
+export const deleteContentFromS3 = (uuid: string): Promise<S3.DeleteObjectOutput> =>
+  exports.deleteS3Object(`queue/${uuid}`)
