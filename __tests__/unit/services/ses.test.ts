@@ -1,4 +1,5 @@
 import { email, event } from '../__mocks__'
+import { notificationTarget } from '@config'
 import * as sesService from '@services/ses'
 import { generateEmailFromData, sendErrorEmail, sendRawEmail } from '@services/ses'
 
@@ -74,7 +75,7 @@ describe('ses', () => {
           replyTo: 'do-not-reply@bowland.link',
           sender: 'do-not-reply@bowland.link',
           subject: 'Error processing SQS queue',
-          to: ['emails-queue-service-error@bowland.link'],
+          to: [notificationTarget],
         })
       )
     })
