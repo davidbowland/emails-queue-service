@@ -1,5 +1,3 @@
-import escape from 'escape-html'
-
 import { email, event } from '../__mocks__'
 import * as sesService from '@services/ses'
 import { generateEmailFromData, sendErrorEmail, sendRawEmail } from '@services/ses'
@@ -70,19 +68,15 @@ describe('ses', () => {
     test('expect generateEmailFromData called with error information', async () => {
       mockGenerateEmailFromData.mockResolvedValueOnce(expectedBuffer)
       await sendErrorEmail(event, error)
-      expect(mockGenerateEmailFromData).toHaveBeenCalledWith({
-        from: 'do-not-reply@bowland.link',
-        html: `<p>There was an error processing SQS message event: ${escape(
-          JSON.stringify(event)
-        )}<br><br>Encountered error: Error: A wild error appeared</p>`,
-        replyTo: 'do-not-reply@bowland.link',
-        sender: 'do-not-reply@bowland.link',
-        subject: 'Error processing SQS queue',
-        text: `There was an error processing SQS message event: ${escape(
-          JSON.stringify(event)
-        )}\n\nEncountered error: Error: A wild error appeared`,
-        to: ['emails-queue-service-error@bowland.link'],
-      })
+      expect(mockGenerateEmailFromData).toHaveBeenCalledWith(
+        expect.objectContaining({
+          from: 'do-not-reply@bowland.link',
+          replyTo: 'do-not-reply@bowland.link',
+          sender: 'do-not-reply@bowland.link',
+          subject: 'Error processing SQS queue',
+          to: ['emails-queue-service-error@bowland.link'],
+        })
+      )
     })
 
     test('expect generateEmailFromData called with error information', async () => {

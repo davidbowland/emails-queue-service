@@ -23,10 +23,10 @@ export const sendRawEmail = (message: Buffer): Promise<SES.SendRawEmailResponse>
 
 /* Error */
 
-const convertErrorToText = (event: SQSEvent, error: unknown): string =>
-  `There was an error processing SQS message event: ${escape(JSON.stringify(event))}\n\nEncountered error: ${escape(
-    error as string
-  )}`
+const convertErrorToText = (event: SQSEvent, error: Error): string =>
+  `There was an error processing SQS message event: ${escape(
+    JSON.stringify(event)
+  )}\n\nAt ${new Date().toISOString()} encountered error: ${escape(error as unknown as string)}\n${escape(error.stack)}`
 
 export const sendErrorEmail = (event: SQSEvent, error: Error): Promise<string> =>
   Promise.resolve(convertErrorToText(event, error))
