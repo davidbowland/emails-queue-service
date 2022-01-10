@@ -38,7 +38,7 @@ Resources:
       CodeUri: './dist'
       Environment:
         Variables:
-          EMAIL_BUCKET: emails-dbowland
+          EMAIL_BUCKET: emails-service-storage
           EMAIL_REGION: us-east-1
       # This property associates this Lambda function with the SQS queue defined above, so that whenever the queue
       # receives a message, the Lambda function is invoked
@@ -49,13 +49,13 @@ Resources:
             BatchSize: 7
             Queue: !GetAtt SimpleQueue.Arn
       MemorySize: 128
-      Timeout: 120
+      Timeout: 60
       Policies:
         # Give Lambda basic execution Permission
         - AWSLambdaBasicExecutionRole
         # Grant access to S3 bucket
         - S3CrudPolicy:
-            BucketName: emails-dbowland
+            BucketName: emails-service-storage
         # Grant access to SES identity
         - SESCrudPolicy:
             IdentityName: bowland.link
