@@ -68,4 +68,4 @@ Resources:
     DependsOn: [SQSPayloadProcessor]
     Properties:
       LogGroupName: !Sub /aws/lambda/${SQSPayloadProcessor}
-      RetentionInDays: 90
+      RetentionInDays: 30
