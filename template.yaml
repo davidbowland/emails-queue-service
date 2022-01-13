@@ -12,6 +12,25 @@ Description: >-
 Transform:
   - AWS::Serverless-2016-10-31
 
+Parameters:
+  AccountId:
+    Type: String
+    Description: AWS account ID
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues:
+      - prod
+      - test
+    Description: Environment for deploy
+
+Mappings:
+  EnvironmentMap:
+    prod:
+      bucket: emails-service-storage
+    test:
+      bucket: emails-service-storage-test
+
 # Resources declares the AWS resources that you want to include in the stack
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:
@@ -38,7 +57,7 @@ Resources:
       CodeUri: './dist'
       Environment:
         Variables:
-          EMAIL_BUCKET: emails-service-storage
+          EMAIL_BUCKET: !FindInMap [EnvironmentMap, !Ref Environment, bucket]
           EMAIL_REGION: us-east-1
       # This property associates this Lambda function with the SQS queue defined above, so that whenever the queue
       # receives a message, the Lambda function is invoked
@@ -55,7 +74,7 @@ Resources:
         - AWSLambdaBasicExecutionRole
         # Grant access to S3 bucket
         - S3CrudPolicy:
-            BucketName: emails-service-storage
+            BucketName: !FindInMap [EnvironmentMap, !Ref Environment, bucket]
         # Grant access to SES identity
         - SESCrudPolicy:
             IdentityName: bowland.link
