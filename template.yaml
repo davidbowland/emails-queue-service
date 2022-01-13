@@ -1,14 +1,7 @@
-# This is the SAM template that represents the architecture of your serverless application
-# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
-
-# The AWSTemplateFormatVersion identifies the capabilities of the template
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   emails-queue-service
 
-# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
 Transform:
   - AWS::Serverless-2016-10-31
 
@@ -31,11 +24,7 @@ Mappings:
     test:
       bucket: emails-service-storage-test
 
-# Resources declares the AWS resources that you want to include in the stack
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:
-  # This is an SQS queue with all default configuration properties. To learn more about the available options, see
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-sqs-queues.html
   SimpleQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -44,8 +33,6 @@ Resources:
       MessageRetentionPeriod: 1209600 # 14 days
       VisibilityTimeout: 60
 
-  # This is the Lambda function definition associated with the source code: sqs-payload-logger.js. For all available properties, see
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
   SQSPayloadProcessor:
     Type: AWS::Serverless::Function
     Properties:
@@ -59,8 +46,6 @@ Resources:
         Variables:
           EMAIL_BUCKET: !FindInMap [EnvironmentMap, !Ref Environment, bucket]
           EMAIL_REGION: us-east-1
-      # This property associates this Lambda function with the SQS queue defined above, so that whenever the queue
-      # receives a message, the Lambda function is invoked
       Events:
         SQSQueueEvent:
           Type: SQS
