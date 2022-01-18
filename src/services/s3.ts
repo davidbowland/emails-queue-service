@@ -5,15 +5,16 @@ import { Attachment, AttachmentContent, EmailData } from '../types'
 
 const s3 = new S3({ apiVersion: '2006-03-01' })
 
-const getFromS3ThenDelete = (key: string): string | Buffer =>
-  exports.getS3Object(key).then((content) => exports.deleteS3Object(key).then(() => content))
+const getFromS3ThenDelete = async (key: string): Promise<string | Buffer> => {
+  const content = await exports.getS3Object(key)
+  await exports.deleteS3Object(key)
+  return content
+}
 
 const getContentFromAttachment = (attachment: Attachment): Promise<string | Buffer> =>
-  Promise.resolve(
-    attachment.content.type === 'Buffer'
-      ? Buffer.from(attachment.content.data)
-      : getFromS3ThenDelete(attachment.content as unknown as string)
-  )
+  attachment.content.type === 'Buffer'
+    ? Promise.resolve(Buffer.from(attachment.content.data))
+    : getFromS3ThenDelete(attachment.content as unknown as string)
 
 const transformSingleAttachment = (attachment: Attachment): Promise<AttachmentContent> =>
   getContentFromAttachment(attachment).then((content) => ({
