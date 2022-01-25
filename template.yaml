@@ -21,8 +21,10 @@ Mappings:
   EnvironmentMap:
     prod:
       bucket: emails-service-storage
+      domain: dbowland.com
     test:
       bucket: emails-service-storage-test
+      domain: bowland.link
 
 Resources:
   SimpleQueue:
@@ -46,6 +48,7 @@ Resources:
         Variables:
           EMAIL_BUCKET: !FindInMap [EnvironmentMap, !Ref Environment, bucket]
           EMAIL_REGION: us-east-1
+          DOMAIN: !FindInMap [EnvironmentMap, !Ref Environment, domain]
       Events:
         SQSQueueEvent:
           Type: SQS
@@ -62,7 +65,7 @@ Resources:
             BucketName: !FindInMap [EnvironmentMap, !Ref Environment, bucket]
         # Grant access to SES identity
         - SESCrudPolicy:
-            IdentityName: bowland.link
+            IdentityName: !FindInMap [EnvironmentMap, !Ref Environment, domain]
         # Grant access to SQS queue
         - SQSPollerPolicy:
             QueueName: !GetAtt SimpleQueue.QueueName

@@ -5,3 +5,4 @@ process.env.EMAIL_BUCKET = 'test-bucket'
 // SES
 
 process.env.EMAIL_REGION = 'us-east-1'
+process.env.DOMAIN = 'localhost'

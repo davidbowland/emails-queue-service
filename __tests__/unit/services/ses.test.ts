@@ -71,9 +71,9 @@ describe('ses', () => {
       await sendErrorEmail(event, error)
       expect(mockGenerateEmailFromData).toHaveBeenCalledWith(
         expect.objectContaining({
-          from: 'do-not-reply@bowland.link',
-          replyTo: 'do-not-reply@bowland.link',
-          sender: 'do-not-reply@bowland.link',
+          from: 'do-not-reply@localhost',
+          replyTo: 'do-not-reply@localhost',
+          sender: 'do-not-reply@localhost',
           subject: 'Error processing SQS queue',
           to: [notificationTarget],
         })
