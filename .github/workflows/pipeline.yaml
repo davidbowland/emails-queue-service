@@ -11,22 +11,14 @@ env:
   PIPELINE_USER_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   SAM_TEMPLATE: template.yaml
   TESTING_STACK_NAME: emails-queue-service-test
-  TESTING_PIPELINE_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/aws-sam-cli-managed-dev-pipe-PipelineExecutionRole-DRD9O21EQL33
-  TESTING_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/aws-sam-cli-managed-dev-p-CloudFormationExecutionR-1VAGXTZ6YPX38
-  TESTING_ARTIFACTS_BUCKET: emails-lambda-source
-  # If there are functions with "Image" PackageType in your template,
-  # uncomment the line below and add "--image-repository ${TESTING_IMAGE_REPOSITORY}" to
-  # testing "sam package" and "sam deploy" commands.
-  # TESTING_IMAGE_REPOSITORY = '0123456789.dkr.ecr.region.amazonaws.com/repository-name'
+  TESTING_PIPELINE_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/aws-sam-cli-managed-emails-q-PipelineExecutionRole-1ABYN490SS58J
+  TESTING_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/aws-sam-cli-managed-email-CloudFormationExecutionR-1XI44HO3NYW46
+  TESTING_ARTIFACTS_BUCKET: aws-sam-cli-managed-emails-queue-artifactsbucket-occwq1o9816t
   TESTING_REGION: ${{ secrets.AWS_REGION }}
   PROD_STACK_NAME: emails-queue-service
-  PROD_PIPELINE_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/aws-sam-cli-managed-prod-pip-PipelineExecutionRole-MJL5WDWSUADJ
-  PROD_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/aws-sam-cli-managed-prod-CloudFormationExecutionR-175EQOZKAQ42Z
-  PROD_ARTIFACTS_BUCKET: emails-lambda-source
-  # If there are functions with "Image" PackageType in your template,
-  # uncomment the line below and add "--image-repository ${PROD_IMAGE_REPOSITORY}" to
-  # prod "sam package" and "sam deploy" commands.
-  # PROD_IMAGE_REPOSITORY = '0123456789.dkr.ecr.region.amazonaws.com/repository-name'
+  PROD_PIPELINE_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/aws-sam-cli-managed-emails-q-PipelineExecutionRole-SAAIEYFXSJXK
+  PROD_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/aws-sam-cli-managed-email-CloudFormationExecutionR-JV7H3AIEI33F
+  PROD_ARTIFACTS_BUCKET: aws-sam-cli-managed-emails-queue-artifactsbucket-1ufra4c4ydlx8
   PROD_REGION: ${{ secrets.AWS_REGION }}
 
 jobs:
