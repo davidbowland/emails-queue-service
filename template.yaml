@@ -33,6 +33,7 @@ Resources:
       FifoQueue: true
       KmsMasterKeyId: alias/aws/sqs
       MessageRetentionPeriod: 1209600 # 14 days
+      ReceiveMessageWaitTimeSeconds: 20
       VisibilityTimeout: 60
 
   SQSPayloadProcessor:
@@ -46,9 +47,9 @@ Resources:
       CodeUri: './dist'
       Environment:
         Variables:
+          DOMAIN: !FindInMap [EnvironmentMap, !Ref Environment, domain]
           EMAIL_BUCKET: !FindInMap [EnvironmentMap, !Ref Environment, bucket]
           EMAIL_REGION: us-east-1
-          DOMAIN: !FindInMap [EnvironmentMap, !Ref Environment, domain]
       Events:
         SQSQueueEvent:
           Type: SQS
