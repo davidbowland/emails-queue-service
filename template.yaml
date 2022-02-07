@@ -34,17 +34,18 @@ Resources:
       KmsMasterKeyId: alias/aws/sqs
       MessageRetentionPeriod: 1209600 # 14 days
       ReceiveMessageWaitTimeSeconds: 20
+      Tags:
+        'created-by': 'emails-queue-service'
+        'created-for': 'emails'
       VisibilityTimeout: 60
 
   SQSPayloadProcessor:
     Type: AWS::Serverless::Function
     Properties:
-      Description: Processes queued messages to send emails.
-      Runtime: nodejs14.x
       Architectures:
         - x86_64
-      Handler: handlers/sqs-payload-processor.sqsPayloadProcessorHandler
       CodeUri: './dist'
+      Description: Processes queued messages to send emails.
       Environment:
         Variables:
           DOMAIN: !FindInMap [EnvironmentMap, !Ref Environment, domain]
@@ -56,8 +57,8 @@ Resources:
           Properties:
             BatchSize: 7
             Queue: !GetAtt SimpleQueue.Arn
+      Handler: handlers/sqs-payload-processor.sqsPayloadProcessorHandler
       MemorySize: 128
-      Timeout: 60
       Policies:
         # Give Lambda basic execution Permission
         - AWSLambdaBasicExecutionRole
@@ -70,6 +71,11 @@ Resources:
         # Grant access to SQS queue
         - SQSPollerPolicy:
             QueueName: !GetAtt SimpleQueue.QueueName
+      Runtime: nodejs14.x
+      Tags:
+        'created-by': 'emails-queue-service'
+        'created-for': 'emails'
+      Timeout: 60
 
   LambdaLogGroup:
     Type: AWS::Logs::LogGroup
