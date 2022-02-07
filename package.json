@@ -2,7 +2,7 @@
   "name": "emails-queue-service",
   "author": "David Bowland",
   "description": "Sends emails queued in SQS",
-  "version": "1.19.0",
+  "version": "1.20.0",
   "engines": {
     "node": "^14.0.0"
   },
