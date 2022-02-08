@@ -34,9 +34,6 @@ Resources:
       KmsMasterKeyId: alias/aws/sqs
       MessageRetentionPeriod: 1209600 # 14 days
       ReceiveMessageWaitTimeSeconds: 20
-      Tags:
-        'created-by': 'emails-queue-service'
-        'created-for': 'emails'
       VisibilityTimeout: 60
 
   SQSPayloadProcessor:
@@ -72,9 +69,6 @@ Resources:
         - SQSPollerPolicy:
             QueueName: !GetAtt SimpleQueue.QueueName
       Runtime: nodejs14.x
-      Tags:
-        'created-by': 'emails-queue-service'
-        'created-for': 'emails'
       Timeout: 60
 
   LambdaLogGroup:
@@ -83,3 +77,14 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${SQSPayloadProcessor}
       RetentionInDays: 30
+
+  ErrorMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    DependsOn: [LambdaLogGroup]
+    Properties:
+      FilterPattern: '[timestamp, uuid, level="ERROR", message]'
+      LogGroupName: !Sub /aws/lambda/${SQSPayloadProcessor}
+      MetricTransformations:
+        - MetricValue: '1'
+          MetricNamespace: dbowland
+          MetricName: ErrorCount
