@@ -72,6 +72,14 @@ describe('sqs-payload-processor', () => {
       expect(mockProcessSingleMessageSpy).toHaveBeenCalledWith(record2)
     })
 
+    test('expect logError to be called when a message rejects', async () => {
+      const error = 'big-fuzzy-error'
+      mockProcessSingleMessageSpy.mockRejectedValueOnce(error)
+      await sqsPayloadProcessorHandler(event, undefined, undefined)
+      expect(mockProcessSingleMessageSpy).toHaveBeenCalledWith(record)
+      expect(mocked(logging).logError).toHaveBeenCalledWith(error)
+    })
+
     test('expect sendErrorEmail to be called when a message rejects', async () => {
       const error = 'big-fuzzy-error'
       mockProcessSingleMessageSpy.mockRejectedValueOnce(error)

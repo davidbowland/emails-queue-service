@@ -1,7 +1,7 @@
 import { deleteContentFromS3, fetchContentFromS3 } from '../services/s3'
 import { generateEmailFromData, sendErrorEmail, sendRawEmail } from '../services/ses'
 import { SQSEvent, SQSHandler, SQSRecord } from '../types'
-import { log } from '../utils/logging'
+import { log, logError } from '../utils/logging'
 import { getDataFromRecord } from '../utils/message-processing'
 
 /* Queue processing */
@@ -20,6 +20,7 @@ export const sqsPayloadProcessorHandler: SQSHandler = async (event: SQSEvent): P
     try {
       await exports.processSingleMessage(record)
     } catch (error) {
+      logError(error)
       sendErrorEmail(event, error)
     }
   }
