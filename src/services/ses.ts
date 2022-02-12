@@ -5,7 +5,7 @@ import MailComposer from 'nodemailer/lib/mail-composer'
 
 import { emailRegion, notificationFrom, notificationTarget } from '../config'
 import { EmailData } from '../types'
-import { log, logError } from '../utils/logging'
+import { logError } from '../utils/logging'
 
 const ses = new SES({ apiVersion: '2010-12-01', region: emailRegion })
 
@@ -41,6 +41,5 @@ export const sendErrorEmail = (event: SQSEvent, error: Error): Promise<string> =
     }))
     .then(exports.generateEmailFromData)
     .then(exports.sendRawEmail)
-    .then(() => log(error))
     .catch(logError)
     .then(() => `${error}`)
