@@ -22,9 +22,13 @@ Mappings:
     prod:
       bucket: emails-service-storage
       domain: dbowland.com
+      errorTopic: arn:aws:sns:us-east-1:494887012091:error-topic
+      project: emails-queue-service
     test:
       bucket: emails-service-storage-test
       domain: bowland.link
+      errorTopic: arn:aws:sns:us-east-1:494887012091:error-topic-test
+      project: emails-queue-service-test
 
 Resources:
   SimpleQueue:
@@ -86,5 +90,26 @@ Resources:
       LogGroupName: !Sub /aws/lambda/${SQSPayloadProcessor}
       MetricTransformations:
         - MetricValue: '1'
-          MetricNamespace: dbowland
+          MetricNamespace: !Sub
+            - 'dbowland/${Project}'
+            - Project: !FindInMap [EnvironmentMap, !Ref Environment, project]
           MetricName: ErrorCount
+
+  ErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !FindInMap [EnvironmentMap, !Ref Environment, errorTopic]
+      AlarmDescription: Error alarm for emails-queue-service
+      AlarmName: !FindInMap [EnvironmentMap, !Ref Environment, project]
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      DatapointsToAlarm: 1
+      EvaluationPeriods: 1
+      MetricName: ErrorCount
+      Namespace: !Sub
+        - 'dbowland/${Project}'
+        - Project: !FindInMap [EnvironmentMap, !Ref Environment, project]
+      Period: 60
+      Statistic: Maximum
+      Threshold: 1
+      TreatMissingData: notBreaching
