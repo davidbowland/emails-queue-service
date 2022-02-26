@@ -11,14 +11,14 @@ env:
   PIPELINE_USER_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   SAM_TEMPLATE: template.yaml
   TESTING_STACK_NAME: emails-queue-service-test
-  TESTING_PIPELINE_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/aws-sam-cli-managed-emails-q-PipelineExecutionRole-1ABYN490SS58J
-  TESTING_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/aws-sam-cli-managed-email-CloudFormationExecutionR-1XI44HO3NYW46
-  TESTING_ARTIFACTS_BUCKET: aws-sam-cli-managed-emails-queue-artifactsbucket-occwq1o9816t
+  TESTING_PIPELINE_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/emails-pipeline-test
+  TESTING_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/emails-cloudformation-test
+  TESTING_ARTIFACTS_BUCKET: emails-lambda-test
   TESTING_REGION: ${{ secrets.AWS_REGION }}
   PROD_STACK_NAME: emails-queue-service
-  PROD_PIPELINE_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/aws-sam-cli-managed-emails-q-PipelineExecutionRole-SAAIEYFXSJXK
-  PROD_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/aws-sam-cli-managed-email-CloudFormationExecutionR-JV7H3AIEI33F
-  PROD_ARTIFACTS_BUCKET: aws-sam-cli-managed-emails-queue-artifactsbucket-1ufra4c4ydlx8
+  PROD_PIPELINE_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/emails-pipeline
+  PROD_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/emails-cloudformation
+  PROD_ARTIFACTS_BUCKET: emails-lambda
   PROD_REGION: ${{ secrets.AWS_REGION }}
 
 jobs:
@@ -42,8 +42,6 @@ jobs:
 
   build-and-deploy-feature:
     name: Deploy feature branch
-    # this stage is triggered only for feature branches (feature*),
-    # which will build the stack and deploy to a stack named with branch name.
     if: startsWith(github.ref, 'refs/heads/feature')
     needs: [test]
     runs-on: ubuntu-latest
@@ -84,6 +82,7 @@ jobs:
             --capabilities CAPABILITY_IAM \
             --region ${TESTING_REGION} \
             --s3-bucket ${TESTING_ARTIFACTS_BUCKET} \
+            --s3-prefix emails-queue-service-test \
             --no-fail-on-empty-changeset \
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE} \
             --parameter-overrides 'Environment=test'
@@ -127,6 +126,7 @@ jobs:
         run: |
           sam package \
             --s3-bucket ${TESTING_ARTIFACTS_BUCKET} \
+            --s3-prefix emails-queue-service-test \
             --region ${TESTING_REGION} \
             --output-template-file packaged-testing.yaml
 
@@ -150,6 +150,7 @@ jobs:
         run: |
           sam package \
             --s3-bucket ${PROD_ARTIFACTS_BUCKET} \
+            --s3-prefix emails-queue-service \
             --region ${PROD_REGION} \
             --output-template-file packaged-prod.yaml
 
@@ -190,6 +191,7 @@ jobs:
             --capabilities CAPABILITY_IAM \
             --region ${TESTING_REGION} \
             --s3-bucket ${TESTING_ARTIFACTS_BUCKET} \
+            --s3-prefix emails-queue-service-test \
             --no-fail-on-empty-changeset \
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE} \
             --parameter-overrides 'Environment=test'
@@ -226,6 +228,7 @@ jobs:
             --capabilities CAPABILITY_IAM \
             --region ${PROD_REGION} \
             --s3-bucket ${PROD_ARTIFACTS_BUCKET} \
+            --s3-prefix emails-queue-service \
             --no-fail-on-empty-changeset \
             --role-arn ${PROD_CLOUDFORMATION_EXECUTION_ROLE}
 
