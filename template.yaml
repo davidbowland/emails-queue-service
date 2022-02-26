@@ -20,11 +20,13 @@ Mappings:
       bucket: emails-service-storage
       domain: dbowland.com
       errorTopic: arn:aws:sns:us-east-1:494887012091:error-topic
+      logStreamFunction: log-subscriber
       project: emails-queue-service
     test:
       bucket: emails-service-storage-test
       domain: bowland.link
       errorTopic: arn:aws:sns:us-east-1:494887012091:error-topic-test
+      logStreamFunction: log-subscriber-test
       project: emails-queue-service-test
 
 Resources:
@@ -79,34 +81,11 @@ Resources:
       LogGroupName: !Sub /aws/lambda/${SQSPayloadProcessor}
       RetentionInDays: 30
 
-  ErrorMetricFilter:
-    Type: AWS::Logs::MetricFilter
-    DependsOn: [LambdaLogGroup]
+  LambdaLogGroupSubscription:
+    Type: AWS::Logs::SubscriptionFilter
     Properties:
+      DestinationArn: !Sub
+        - 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${Function}'
+        - Function: !FindInMap [EnvironmentMap, !Ref Environment, logStreamFunction]
       FilterPattern: '[timestamp, uuid, level="ERROR", message]'
-      LogGroupName: !Sub /aws/lambda/${SQSPayloadProcessor}
-      MetricTransformations:
-        - MetricValue: '1'
-          MetricNamespace: !Sub
-            - 'dbowland/${Project}'
-            - Project: !FindInMap [EnvironmentMap, !Ref Environment, project]
-          MetricName: ErrorCount
-
-  ErrorAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmActions:
-        - !FindInMap [EnvironmentMap, !Ref Environment, errorTopic]
-      AlarmDescription: Error alarm for emails-queue-service
-      AlarmName: !FindInMap [EnvironmentMap, !Ref Environment, project]
-      ComparisonOperator: GreaterThanOrEqualToThreshold
-      DatapointsToAlarm: 1
-      EvaluationPeriods: 1
-      MetricName: ErrorCount
-      Namespace: !Sub
-        - 'dbowland/${Project}'
-        - Project: !FindInMap [EnvironmentMap, !Ref Environment, project]
-      Period: 60
-      Statistic: Maximum
-      Threshold: 1
-      TreatMissingData: notBreaching
+      LogGroupName: !Ref LambdaLogGroup
