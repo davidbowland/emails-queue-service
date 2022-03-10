@@ -28,9 +28,10 @@ const convertErrorToText = (event: SQSEvent, error: Error): string =>
     JSON.stringify(event)
   )}\n\nAt ${new Date().toISOString()} encountered error: ${escape(error as unknown as string)}\n${escape(error.stack)}`
 
-export const sendErrorEmail = (event: SQSEvent, error: Error): Promise<string> =>
-  Promise.resolve(convertErrorToText(event, error))
-    .then((text) => ({
+export const sendErrorEmail = async (event: SQSEvent, error: Error): Promise<string> => {
+  try {
+    const text = convertErrorToText(event, error)
+    const email = await exports.generateEmailFromData({
       from: notificationFrom,
       sender: notificationFrom,
       to: [notificationTarget],
@@ -38,8 +39,10 @@ export const sendErrorEmail = (event: SQSEvent, error: Error): Promise<string> =
       subject: 'Error processing SQS queue',
       text: text,
       html: `<p>${text.replace(/\n/g, '<br>')}</p>`,
-    }))
-    .then(exports.generateEmailFromData)
-    .then(exports.sendRawEmail)
-    .catch(logError)
-    .then(() => `${error}`)
+    })
+    await exports.sendRawEmail(email)
+  } catch (error) {
+    logError(error)
+  }
+  return `${error}`
+}

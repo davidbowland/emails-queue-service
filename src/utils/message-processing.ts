@@ -4,5 +4,4 @@ import { MessageData } from '../types'
 
 /* Body */
 
-export const getDataFromRecord = (record: SQSRecord): Promise<MessageData> =>
-  new Promise((resolve) => resolve(JSON.parse(record.body)))
+export const getDataFromRecord = (record: SQSRecord): MessageData => JSON.parse(record.body)
