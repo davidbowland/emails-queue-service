@@ -16,11 +16,13 @@ const getContentFromAttachment = (attachment: Attachment): Promise<string | Buff
     ? Promise.resolve(Buffer.from(attachment.content.data))
     : getFromS3ThenDelete(attachment.content as unknown as string)
 
-const transformSingleAttachment = (attachment: Attachment): Promise<AttachmentContent> =>
-  getContentFromAttachment(attachment).then((content) => ({
+const transformSingleAttachment = async (attachment: Attachment): Promise<AttachmentContent> => {
+  const content = await getContentFromAttachment(attachment)
+  return {
     ...attachment,
     content,
-  }))
+  }
+}
 
 const transformAttachmentBuffers = (email: EmailData): Promise<AttachmentContent>[] =>
   email.attachments ? (email.attachments as Attachment[]).map(transformSingleAttachment) : []
@@ -33,16 +35,15 @@ export const getS3Object = (key: string): Promise<string | Buffer> =>
     .promise()
     .then((result) => (result.Body ?? '') as string)
 
-export const fetchContentFromS3 = (uuid: string): Promise<EmailData> =>
-  exports
-    .getS3Object(`queue/${uuid}`)
-    .then(JSON.parse)
-    .then((email: EmailData) =>
-      Promise.all(transformAttachmentBuffers(email)).then((attachments) => ({
-        ...email,
-        attachments,
-      }))
-    )
+export const fetchContentFromS3 = async (uuid: string): Promise<EmailData> => {
+  const s3Data = await exports.getS3Object(`queue/${uuid}`)
+  const email = JSON.parse(s3Data)
+  const attachments = await Promise.all(transformAttachmentBuffers(email))
+  return {
+    ...email,
+    attachments,
+  }
+}
 
 /* Delete */
 
