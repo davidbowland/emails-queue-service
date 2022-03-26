@@ -1,12 +1,12 @@
 import { mocked } from 'jest-mock'
 
-import { email, record, uuid } from '../__mocks__'
-import * as sqsPayloadProcessor from '@handlers/sqs-payload-processor'
-import { processSingleMessage, sqsPayloadProcessorHandler } from '@handlers/sqs-payload-processor'
-import * as s3 from '@services/s3'
-import * as ses from '@services/ses'
 import * as logging from '@utils/logging'
 import * as messageProcessing from '@utils/message-processing'
+import * as s3 from '@services/s3'
+import * as ses from '@services/ses'
+import * as sqsPayloadProcessor from '@handlers/sqs-payload-processor'
+import { email, record, uuid } from '../__mocks__'
+import { processSingleMessage, sqsPayloadProcessorHandler } from '@handlers/sqs-payload-processor'
 
 jest.mock('@services/s3')
 jest.mock('@services/ses')

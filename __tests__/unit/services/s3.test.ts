@@ -1,7 +1,7 @@
-import { attachmentBuffer, email, uuid } from '../__mocks__'
-import { emailBucket } from '@config'
 import * as s3Module from '@services/s3'
+import { attachmentBuffer, email, uuid } from '../__mocks__'
 import { deleteContentFromS3, deleteS3Object, fetchContentFromS3, getS3Object } from '@services/s3'
+import { emailBucket } from '@config'
 
 const mockDeleteObject = jest.fn()
 const mockGetObject = jest.fn()

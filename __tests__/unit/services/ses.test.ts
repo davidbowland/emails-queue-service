@@ -1,7 +1,7 @@
-import { email, event } from '../__mocks__'
-import { notificationTarget } from '@config'
 import * as sesService from '@services/ses'
+import { email, event } from '../__mocks__'
 import { generateEmailFromData, sendErrorEmail, sendRawEmail } from '@services/ses'
+import { notificationTarget } from '@config'
 
 const mockSendRawEmail = jest.fn()
 jest.mock('aws-sdk', () => ({

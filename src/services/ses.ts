@@ -1,7 +1,7 @@
-import { SQSEvent } from 'aws-lambda'
-import { SES } from 'aws-sdk'
-import escape from 'escape-html'
 import MailComposer from 'nodemailer/lib/mail-composer'
+import { SES } from 'aws-sdk'
+import { SQSEvent } from 'aws-lambda'
+import escape from 'escape-html'
 
 import { emailRegion, notificationFrom, notificationTarget } from '../config'
 import { EmailData } from '../types'
@@ -33,12 +33,13 @@ export const sendErrorEmail = async (event: SQSEvent, error: Error): Promise<str
     const text = convertErrorToText(event, error)
     const email = await exports.generateEmailFromData({
       from: notificationFrom,
-      sender: notificationFrom,
-      to: [notificationTarget],
+      html: `<p>${text.replace(/\n/g, '<br>')}</p>`,
+
       replyTo: notificationFrom,
+      sender: notificationFrom,
       subject: 'Error processing SQS queue',
       text: text,
-      html: `<p>${text.replace(/\n/g, '<br>')}</p>`,
+      to: [notificationTarget],
     })
     await exports.sendRawEmail(email)
   } catch (error) {

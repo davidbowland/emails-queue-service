@@ -6,8 +6,8 @@ export const attachment = {
   checksum: 'jytgbni87ytgbnjkuy',
   cid: 'ytghji87ytgbhj',
   content: {
-    type: 'Buffer',
     data: [...attachmentBuffer],
+    type: 'Buffer',
   },
   contentDisposition: 'attachment',
   contentId: 'j7ytgbnjhgfdert',
@@ -21,36 +21,38 @@ export const attachment = {
 }
 
 export const email: EmailData = {
+  attachments: [attachment],
   from: 'A Person <email@address.com>',
-  sender: 'A Person <email@address.com>',
-  to: ['Another Person <another@address.com>'],
-  replyTo: 'email@address.com',
-  inReplyTo: 'ytfghj6tghj',
-  references: ['87ytgbnmnbgf', '876tghjhtyu'],
-  subject: 'Hi there!',
-  text: 'Hello, world',
-  html: '<p>Hello, world</p>',
   headers: {
     'Content-Type': 'text/html',
   },
-  attachments: [attachment],
+  html: '<p>Hello, world</p>',
+  inReplyTo: 'ytfghj6tghj',
+
+  references: ['87ytgbnmnbgf', '876tghjhtyu'],
+  replyTo: 'email@address.com',
+
+  sender: 'A Person <email@address.com>',
+  subject: 'Hi there!',
+  text: 'Hello, world',
+  to: ['Another Person <another@address.com>'],
 }
 
 export const record: SQSRecord = {
-  messageId: '19dd0b57-b21e-4ac1-bd88-01bbb068cb78',
-  receiptHandle: 'MessageReceiptHandle',
-  body: JSON.stringify(email),
   attributes: {
-    ApproximateReceiveCount: '1',
-    SentTimestamp: '1523232000000',
-    SenderId: '123456789012',
     ApproximateFirstReceiveTimestamp: '1523232000001',
+    ApproximateReceiveCount: '1',
+    SenderId: '123456789012',
+    SentTimestamp: '1523232000000',
   },
-  messageAttributes: {},
-  md5OfBody: '{{{md5_of_body}}}',
+  awsRegion: 'us-east-1',
+  body: JSON.stringify(email),
   eventSource: 'aws:sqs',
   eventSourceARN: 'arn:aws:sqs:us-east-1:123456789012:MyQueue',
-  awsRegion: 'us-east-1',
+  md5OfBody: '{{{md5_of_body}}}',
+  messageAttributes: {},
+  messageId: '19dd0b57-b21e-4ac1-bd88-01bbb068cb78',
+  receiptHandle: 'MessageReceiptHandle',
 }
 
 export const event = { Records: [record] }
