@@ -44,9 +44,9 @@
     "clean": "rm -rf dist coverage && NODE_ENV=test npm ci",
     "deploy": "npm run build && ./scripts/deploy.sh",
     "lint": "prettier --write . && eslint --fix . --resolve-plugins-relative-to .",
-    "prepare": "if [ \"$HUSKY\" != \"0\" ]; then husky install ; fi",
+    "prepare": "if [ \"$NODE_ENV\" != \"production\" ]; then husky install ; fi",
     "start": "npm run build && npm run quick-start",
-    "quick-start": "tsc && HUSKY=0 sam build && EMAIL_BUCKET=emails-service-storage EMAIL_REGION=us-east-1 sam local invoke --event events/event-sqs.json",
+    "quick-start": "tsc && ./scripts/runLocal.sh",
     "test": "npm run lint && jest --colors"
   },
   "lint-staged": {
