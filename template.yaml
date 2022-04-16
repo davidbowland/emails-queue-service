@@ -37,6 +37,13 @@ Resources:
       KmsMasterKeyId: alias/aws/sqs
       MessageRetentionPeriod: 1209600 # 14 days
       ReceiveMessageWaitTimeSeconds: 20
+      Tags:
+        - Key: 'created-by'
+          Value: 'emails-queue-service'
+        - Key: 'created-for'
+          Value: 'emails'
+        - Key: 'environment'
+          Value: !Ref Environment
       VisibilityTimeout: 60
 
   SQSPayloadProcessor:
@@ -72,6 +79,10 @@ Resources:
         - SQSPollerPolicy:
             QueueName: !GetAtt SimpleQueue.QueueName
       Runtime: nodejs14.x
+      Tags:
+        'created-by': 'emails-queue-service'
+        'created-for': 'emails'
+        'environment': !Ref Environment
       Timeout: 60
 
   LambdaLogGroup:
@@ -80,6 +91,13 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${SQSPayloadProcessor}
       RetentionInDays: 30
+      Tags:
+        - Key: 'created-by'
+          Value: 'emails-queue-service'
+        - Key: 'created-for'
+          Value: 'emails'
+        - Key: 'environment'
+          Value: !Ref Environment
 
   LambdaLogGroupSubscription:
     Type: AWS::Logs::SubscriptionFilter
