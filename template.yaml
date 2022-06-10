@@ -78,7 +78,7 @@ Resources:
         # Grant access to SQS queue
         - SQSPollerPolicy:
             QueueName: !GetAtt SimpleQueue.QueueName
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
       Tags:
         'created-by': 'emails-queue-service'
         'created-for': 'emails'
