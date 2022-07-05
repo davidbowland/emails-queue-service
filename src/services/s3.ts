@@ -2,8 +2,9 @@ import { S3 } from 'aws-sdk'
 
 import { Attachment, AttachmentContent, EmailData } from '../types'
 import { emailBucket } from '../config'
+import { xrayCapture } from '../utils/logging'
 
-const s3 = new S3({ apiVersion: '2006-03-01' })
+const s3 = xrayCapture(new S3({ apiVersion: '2006-03-01' }))
 
 const getFromS3ThenDelete = async (key: string): Promise<string | Buffer> => {
   const content = await exports.getS3Object(key)

@@ -6,8 +6,9 @@ import escape from 'escape-html'
 import { emailRegion, notificationFrom, notificationTarget } from '../config'
 import { EmailData } from '../types'
 import { logError } from '../utils/logging'
+import { xrayCapture } from '../utils/logging'
 
-const ses = new SES({ apiVersion: '2010-12-01', region: emailRegion })
+const ses = xrayCapture(new SES({ apiVersion: '2010-12-01', region: emailRegion }))
 
 /* General */
 

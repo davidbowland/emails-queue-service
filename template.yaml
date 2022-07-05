@@ -84,6 +84,7 @@ Resources:
         'created-for': 'emails'
         'environment': !Ref Environment
       Timeout: 60
+      Tracing: Active
 
   LambdaLogGroup:
     Type: AWS::Logs::LogGroup

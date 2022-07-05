@@ -24,7 +24,10 @@ jest.mock('nodemailer/lib/mail-composer', () =>
     }),
   }))
 )
-jest.mock('@utils/logging')
+jest.mock('@utils/logging', () => ({
+  logError: jest.fn(),
+  xrayCapture: jest.fn().mockImplementation((x) => x),
+}))
 
 describe('ses', () => {
   const expectedBuffer = Buffer.from('sup?')
