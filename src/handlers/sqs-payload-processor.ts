@@ -19,7 +19,7 @@ export const sqsPayloadProcessorHandler: SQSHandler = async (event: SQSEvent): P
   for (const record of event.Records) {
     try {
       await exports.processSingleMessage(record)
-    } catch (error) {
+    } catch (error: any) {
       logError(error)
       sendErrorEmail(event, error)
     }

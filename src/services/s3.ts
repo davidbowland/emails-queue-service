@@ -34,7 +34,7 @@ export const getS3Object = (key: string): Promise<string | Buffer> =>
   s3
     .getObject({ Bucket: emailBucket, Key: key })
     .promise()
-    .then((result) => (result.Body ?? '') as string)
+    .then((result: any) => (result.Body ?? '') as string)
 
 export const fetchContentFromS3 = async (uuid: string): Promise<EmailData> => {
   const s3Data = await exports.getS3Object(`queue/${uuid}`)

@@ -13,5 +13,5 @@ export interface EmailData {
 }
 
 export interface MessageData {
-  uuid?: string
+  uuid: string
 }
