@@ -6,10 +6,16 @@ import { xrayCapture } from '../utils/logging'
 
 const s3 = xrayCapture(new S3({ apiVersion: '2006-03-01' }))
 
+const getFromS3ThenDelete = async (key: string): Promise<string | Buffer> => {
+  const content = await exports.getS3Object(key)
+  await exports.deleteS3Object(key)
+  return content
+}
+
 const getContentFromAttachment = (attachment: Attachment): Promise<string | Buffer> =>
   attachment.content.type === 'Buffer'
     ? Promise.resolve(Buffer.from(attachment.content.data))
-    : exports.getS3Object(attachment.content as unknown as string)
+    : getFromS3ThenDelete(attachment.content as unknown as string)
 
 const transformSingleAttachment = async (attachment: Attachment): Promise<AttachmentContent> => {
   const content = await getContentFromAttachment(attachment)
