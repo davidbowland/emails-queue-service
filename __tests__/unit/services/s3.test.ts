@@ -52,18 +52,6 @@ describe('S3', () => {
       const result = await fetchContentFromS3(uuid)
       expect(result.attachments[0].content).toEqual(content)
     })
-
-    test('expect non-Buffer attachments to be deleted', async () => {
-      const content = 'colorless green ideas'
-      const key = 'queue/message/attachment'
-      const attachment = { ...email.attachments[0], content: key }
-      mockDeleteS3Object.mockResolvedValueOnce(undefined)
-      mockGetS3Object.mockResolvedValueOnce(JSON.stringify({ ...email, attachments: [attachment] }))
-      mockGetS3Object.mockResolvedValueOnce(content)
-
-      await fetchContentFromS3(uuid)
-      expect(mockDeleteS3Object).toHaveBeenCalledWith(key)
-    })
   })
 
   describe('deleteContentFromS3', () => {
