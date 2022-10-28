@@ -1,7 +1,5 @@
-import * as sesService from '@services/ses'
-import { email, event } from '../__mocks__'
-import { generateEmailFromData, sendErrorEmail, sendRawEmail } from '@services/ses'
-import { notificationTarget } from '@config'
+import { generateEmailFromData, sendRawEmail } from '@services/ses'
+import { email } from '../__mocks__'
 
 const mockSendRawEmail = jest.fn()
 jest.mock('aws-sdk', () => ({
@@ -62,51 +60,6 @@ describe('ses', () => {
     test('expect Buffer to be passed to SES', async () => {
       await sendRawEmail(expectedBuffer)
       expect(mockSendRawEmail).toHaveBeenCalledWith({ RawMessage: { Data: expectedBuffer } })
-    })
-  })
-
-  describe('sendErrorEmail', () => {
-    const error = new Error('A wild error appeared')
-    const mockGenerateEmailFromData = jest.spyOn(sesService, 'generateEmailFromData')
-    const mockSendRawEmail = jest.spyOn(sesService, 'sendRawEmail')
-
-    test('expect generateEmailFromData called with error information', async () => {
-      mockGenerateEmailFromData.mockResolvedValueOnce(expectedBuffer)
-      await sendErrorEmail(event, error)
-      expect(mockGenerateEmailFromData).toHaveBeenCalledWith(
-        expect.objectContaining({
-          from: 'do-not-reply@localhost',
-          replyTo: 'do-not-reply@localhost',
-          sender: 'do-not-reply@localhost',
-          subject: 'Error processing SQS queue',
-          to: [notificationTarget],
-        })
-      )
-    })
-
-    test('expect generateEmailFromData called with error information', async () => {
-      mockGenerateEmailFromData.mockResolvedValueOnce(expectedBuffer)
-      mockSendRawEmail.mockResolvedValueOnce(undefined)
-      await sendErrorEmail(event, error)
-      expect(mockSendRawEmail).toHaveBeenCalledWith(expectedBuffer)
-    })
-
-    test('expect error message returned', async () => {
-      const result = await sendErrorEmail(event, error)
-      expect(result).toEqual('Error: A wild error appeared')
-    })
-
-    test('expect error message on generateEmailFromData reject', async () => {
-      mockGenerateEmailFromData.mockRejectedValueOnce(expectedBuffer)
-      const result = await sendErrorEmail(event, error)
-      expect(result).toEqual('Error: A wild error appeared')
-    })
-
-    test('expect error message on sendRawEmail reject', async () => {
-      mockGenerateEmailFromData.mockResolvedValueOnce(expectedBuffer)
-      mockSendRawEmail.mockRejectedValueOnce(undefined)
-      const result = await sendErrorEmail(event, error)
-      expect(result).toEqual('Error: A wild error appeared')
     })
   })
 })
