@@ -5,6 +5,7 @@ describe('message-processing', () => {
   describe('getDataFromRecord', () => {
     test('expect correct output', () => {
       const result = getDataFromRecord(record)
+
       expect(result).toEqual(email)
     })
   })

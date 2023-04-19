@@ -65,7 +65,7 @@ jobs:
       - run: sam build --template ${SAM_TEMPLATE} --use-container --container-env-var NODE_ENV=production
 
       - name: Assume the testing pipeline user role
-        uses: aws-actions/configure-aws-credentials@v1-node18
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
@@ -113,7 +113,7 @@ jobs:
           HUSKY: 0
 
       - name: Assume the testing pipeline user role
-        uses: aws-actions/configure-aws-credentials@v1-node18
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
@@ -137,7 +137,7 @@ jobs:
           path: packaged-testing.yaml
 
       - name: Assume the prod pipeline user role
-        uses: aws-actions/configure-aws-credentials@v1-node18
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
@@ -178,7 +178,7 @@ jobs:
           name: packaged-testing.yaml
 
       - name: Assume the testing pipeline user role
-        uses: aws-actions/configure-aws-credentials@v1-node18
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
@@ -218,7 +218,7 @@ jobs:
           name: packaged-prod.yaml
 
       - name: Assume the prod pipeline user role
-        uses: aws-actions/configure-aws-credentials@v1-node18
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}

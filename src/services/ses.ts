@@ -1,11 +1,11 @@
+import { SendRawEmailCommand, SendRawEmailResponse, SESClient } from '@aws-sdk/client-ses'
 import MailComposer from 'nodemailer/lib/mail-composer'
-import { SES } from 'aws-sdk'
 
 import { EmailData } from '../types'
 import { emailRegion } from '../config'
 import { xrayCapture } from '../utils/logging'
 
-const ses = xrayCapture(new SES({ apiVersion: '2010-12-01', region: emailRegion }))
+const ses = xrayCapture(new SESClient({ apiVersion: '2010-12-01', region: emailRegion }))
 
 /* General */
 
@@ -18,5 +18,7 @@ export const generateEmailFromData = (data: EmailData): Promise<Buffer> =>
     composer.build((err: Error | null, message: Buffer) => (err ? reject(err) : resolve(message)))
   })
 
-export const sendRawEmail = (message: Buffer): Promise<SES.SendRawEmailResponse> =>
-  ses.sendRawEmail({ RawMessage: { Data: message } }).promise()
+export const sendRawEmail = async (message: Buffer): Promise<SendRawEmailResponse> => {
+  const command = new SendRawEmailCommand({ RawMessage: { Data: message } })
+  return ses.send(command)
+}

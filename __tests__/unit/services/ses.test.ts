@@ -1,10 +1,11 @@
 import { generateEmailFromData, sendRawEmail } from '@services/ses'
 import { email } from '../__mocks__'
 
-const mockSendRawEmail = jest.fn()
-jest.mock('aws-sdk', () => ({
-  SES: jest.fn(() => ({
-    sendRawEmail: (...args) => ({ promise: () => mockSendRawEmail(...args) }),
+const mockSend = jest.fn()
+jest.mock('@aws-sdk/client-ses', () => ({
+  SendRawEmailCommand: jest.fn().mockImplementation((x) => x),
+  SESClient: jest.fn(() => ({
+    send: (...args) => mockSend(...args),
   })),
 }))
 const mockMailComposer = jest.fn()
@@ -37,29 +38,33 @@ describe('ses', () => {
 
     test('expect MailComposer called with data', async () => {
       await generateEmailFromData(email)
+
       expect(mockMailComposer).toHaveBeenCalledWith(email)
     })
 
     test('expect MailComposer result to be returned', async () => {
       const result = await generateEmailFromData(email)
+
       expect(result).toEqual(expectedBuffer)
     })
 
     test('expect MailComposer to reject on error', async () => {
       const rejection = new Error()
       mockMailComposer.mockRejectedValueOnce(rejection)
+
       await expect(generateEmailFromData(email)).rejects.toEqual(rejection)
     })
   })
 
   describe('sendRawEmail', () => {
     beforeAll(() => {
-      mockSendRawEmail.mockResolvedValue(undefined)
+      mockSend.mockResolvedValue(undefined)
     })
 
     test('expect Buffer to be passed to SES', async () => {
       await sendRawEmail(expectedBuffer)
-      expect(mockSendRawEmail).toHaveBeenCalledWith({ RawMessage: { Data: expectedBuffer } })
+
+      expect(mockSend).toHaveBeenCalledWith({ RawMessage: { Data: expectedBuffer } })
     })
   })
 })

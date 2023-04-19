@@ -1,10 +1,10 @@
-import { S3 } from 'aws-sdk'
+import { DeleteObjectCommand, DeleteObjectOutput, GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
 
 import { Attachment, AttachmentContent, EmailData } from '../types'
 import { emailBucket } from '../config'
 import { xrayCapture } from '../utils/logging'
 
-const s3 = xrayCapture(new S3({ apiVersion: '2006-03-01' }))
+const s3 = xrayCapture(new S3Client({ apiVersion: '2006-03-01' }))
 
 const getFromS3ThenDelete = async (key: string): Promise<string | Buffer> => {
   const content = await exports.getS3Object(key)
@@ -30,11 +30,11 @@ const transformAttachmentBuffers = (email: EmailData): Promise<AttachmentContent
 
 /* Get */
 
-export const getS3Object = (key: string): Promise<string | Buffer> =>
-  s3
-    .getObject({ Bucket: emailBucket, Key: key })
-    .promise()
-    .then((result: any) => (result.Body ?? '') as string)
+export const getS3Object = async (key: string): Promise<string | Buffer> => {
+  const command = new GetObjectCommand({ Bucket: emailBucket, Key: key })
+  const response = await s3.send(command)
+  return response.Body ?? ''
+}
 
 export const fetchContentFromS3 = async (uuid: string): Promise<EmailData> => {
   const s3Data = await exports.getS3Object(`queue/${uuid}`)
@@ -48,8 +48,10 @@ export const fetchContentFromS3 = async (uuid: string): Promise<EmailData> => {
 
 /* Delete */
 
-export const deleteS3Object = (key: string): Promise<S3.DeleteObjectOutput> =>
-  s3.deleteObject({ Bucket: emailBucket, Key: key }).promise()
+export const deleteS3Object = async (key: string): Promise<DeleteObjectOutput> => {
+  const command = new DeleteObjectCommand({ Bucket: emailBucket, Key: key })
+  return s3.send(command)
+}
 
-export const deleteContentFromS3 = (uuid: string): Promise<S3.DeleteObjectOutput> =>
+export const deleteContentFromS3 = (uuid: string): Promise<DeleteObjectOutput> =>
   exports.deleteS3Object(`queue/${uuid}`)
