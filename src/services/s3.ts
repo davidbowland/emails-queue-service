@@ -1,7 +1,14 @@
-import { DeleteObjectCommand, DeleteObjectOutput, GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import {
+  DeleteObjectCommand,
+  DeleteObjectOutput,
+  GetObjectCommand,
+  GetObjectCommandOutput,
+  S3Client,
+} from '@aws-sdk/client-s3'
 
 import { Attachment, AttachmentContent, EmailData } from '../types'
 import { emailBucket } from '../config'
+import { Readable } from 'stream'
 import { xrayCapture } from '../utils/logging'
 
 const s3 = xrayCapture(new S3Client({ apiVersion: '2006-03-01' }))
@@ -30,15 +37,23 @@ const transformAttachmentBuffers = (email: EmailData): Promise<AttachmentContent
 
 /* Get */
 
-export const getS3Object = async (key: string): Promise<string | Buffer> => {
+const readableToBuffer = (stream: Readable): Promise<Buffer> =>
+  new Promise<Buffer>((resolve, reject) => {
+    const chunks: Buffer[] = []
+    stream.on('data', (chunk) => chunks.push(chunk))
+    stream.on('error', reject)
+    stream.on('end', () => resolve(Buffer.concat(chunks)))
+  })
+
+export const getS3Object = async (key: string): Promise<Buffer> => {
   const command = new GetObjectCommand({ Bucket: emailBucket, Key: key })
-  const response = await s3.send(command)
-  return response.Body ?? ''
+  const response: GetObjectCommandOutput = await s3.send(command)
+  return readableToBuffer(response.Body as Readable)
 }
 
 export const fetchContentFromS3 = async (uuid: string): Promise<EmailData> => {
-  const s3Data = await exports.getS3Object(`queue/${uuid}`)
-  const email = JSON.parse(s3Data)
+  const s3Data: Buffer = await exports.getS3Object(`queue/${uuid}`)
+  const email = JSON.parse(s3Data.toString('utf-8'))
   const attachments = await Promise.all(transformAttachmentBuffers(email))
   return {
     ...email,
