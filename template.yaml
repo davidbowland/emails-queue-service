@@ -51,7 +51,6 @@ Resources:
     Properties:
       Architectures:
         - x86_64
-      CodeUri: './dist'
       Description: Processes queued messages to send emails.
       Environment:
         Variables:
@@ -64,7 +63,7 @@ Resources:
           Properties:
             BatchSize: 7
             Queue: !GetAtt SimpleQueue.Arn
-      Handler: handlers/sqs-payload-processor.sqsPayloadProcessorHandler
+      Handler: src/handlers/sqs-payload-processor.sqsPayloadProcessorHandler
       MemorySize: 128
       Policies:
         # Give Lambda basic execution Permission
@@ -85,6 +84,14 @@ Resources:
         'environment': !Ref Environment
       Timeout: 60
       Tracing: Active
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: 'es2020'
+        Sourcemap: true
+        EntryPoints:
+          - src/handlers/sqs-payload-processor.ts
 
   LambdaLogGroup:
     Type: AWS::Logs::LogGroup
