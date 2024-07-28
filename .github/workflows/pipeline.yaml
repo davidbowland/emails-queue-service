@@ -1,11 +1,5 @@
 name: Pipeline
 
-on:
-  push:
-    branches:
-      - 'master'
-      - 'feature**'
-
 env:
   PIPELINE_USER_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   PIPELINE_USER_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -20,6 +14,12 @@ env:
   PROD_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/emails-cloudformation
   PROD_ARTIFACTS_BUCKET: emails-lambda
   PROD_REGION: ${{ secrets.AWS_REGION }}
+  HUSKY: 0
+
+on: push
+
+permissions:
+  contents: write
 
 jobs:
   test:
@@ -29,10 +29,10 @@ jobs:
     steps:
       - name: Checkout latest code
         uses: actions/checkout@v4
-      - name: Install Node 18
-        uses: actions/setup-node@v3
+      - name: Install Node 20
+        uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 20.x
       - name: Install and audit packages
         run: npm ci && npm audit --audit-level=high
         env:
@@ -42,23 +42,23 @@ jobs:
 
   build-and-deploy-feature:
     name: Deploy feature branch
-    if: startsWith(github.ref, 'refs/heads/feature')
+    if: github.ref != 'refs/heads/master'
     needs: [test]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout latest code
         uses: actions/checkout@v4
       - name: Install Python 3
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
       - name: Install AWS SAM
         uses: aws-actions/setup-sam@v2
 
-      - name: Install Node 18
-        uses: actions/setup-node@v3
+      - name: Install Node 20
+        uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 20.x
       - name: Build TypeScript into Lambda
         run: npm run build
         env:
@@ -66,7 +66,7 @@ jobs:
       - run: sam build --template ${SAM_TEMPLATE} --use-container --container-env-var NODE_ENV=production
 
       - name: Assume the testing pipeline user role
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
@@ -97,16 +97,16 @@ jobs:
       - name: Checkout latest code
         uses: actions/checkout@v4
       - name: Install Python 3
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
       - name: Install AWS SAM
         uses: aws-actions/setup-sam@v2
 
-      - name: Install Node 18
-        uses: actions/setup-node@v3
+      - name: Install Node 20
+        uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 20.x
       - name: Build resources
         run: |
           npm run build
@@ -115,7 +115,7 @@ jobs:
           HUSKY: 0
 
       - name: Assume the testing pipeline user role
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
@@ -133,13 +133,13 @@ jobs:
             --region ${TESTING_REGION} \
             --output-template-file packaged-testing.yaml
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: packaged-testing.yaml
           path: packaged-testing.yaml
 
       - name: Assume the prod pipeline user role
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
@@ -157,7 +157,7 @@ jobs:
             --region ${PROD_REGION} \
             --output-template-file packaged-prod.yaml
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: packaged-prod.yaml
           path: packaged-prod.yaml
@@ -171,17 +171,17 @@ jobs:
       - name: Checkout latest code
         uses: actions/checkout@v4
       - name: Install Python 3
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
       - name: Install AWS SAM
         uses: aws-actions/setup-sam@v2
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: packaged-testing.yaml
 
       - name: Assume the testing pipeline user role
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
@@ -212,17 +212,17 @@ jobs:
       - name: Checkout latest code
         uses: actions/checkout@v4
       - name: Install Python 3
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
       - name: Install AWS SAM
         uses: aws-actions/setup-sam@v2
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: packaged-prod.yaml
 
       - name: Assume the prod pipeline user role
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
@@ -250,10 +250,10 @@ jobs:
     steps:
       - name: Checkout latest code
         uses: actions/checkout@v4
-      - name: Install Node 18
-        uses: actions/setup-node@v3
+      - name: Install Node 20
+        uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 20.x
       - name: Set git name and email
         run: |
           git config --local user.email "dbowland1+bot@gmail.com"
