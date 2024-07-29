@@ -6,7 +6,7 @@ import { getDataFromRecord } from '../utils/message-processing'
 
 /* Queue processing */
 
-export const processSingleMessage = async (record: SQSRecord): Promise<void> => {
+const processSingleMessage = async (record: SQSRecord): Promise<void> => {
   const data = getDataFromRecord(record)
   const contents = await fetchContentFromS3(data.uuid)
   const email = await generateEmailFromData(contents)
@@ -18,7 +18,7 @@ export const sqsPayloadProcessorHandler: SQSHandler = async (event: SQSEvent): P
   log('Received payload', event)
   for (const record of event.Records) {
     try {
-      await exports.processSingleMessage(record)
+      await processSingleMessage(record)
     } catch (error: any) {
       logError(error)
     }

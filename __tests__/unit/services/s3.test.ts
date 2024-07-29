@@ -1,6 +1,5 @@
-import * as s3Module from '@services/s3'
 import { attachmentBuffer, email, uuid } from '../__mocks__'
-import { deleteContentFromS3, deleteS3Object, fetchContentFromS3, getS3Object } from '@services/s3'
+import { deleteContentFromS3, fetchContentFromS3 } from '@services/s3'
 import { emailBucket } from '@config'
 
 const mockSend = jest.fn()
@@ -16,106 +15,71 @@ jest.mock('@utils/logging', () => ({
 }))
 
 describe('S3', () => {
-  const key = 'prefix/key'
+  const key = `queue/${uuid}`
 
   describe('fetchContentFromS3', () => {
     const expectedResult = { Hello: 'world' }
-    const mockDeleteS3Object = jest.spyOn(s3Module, 'deleteS3Object')
-    const mockGetS3Object = jest.spyOn(s3Module, 'getS3Object')
 
-    test('expect correct key passed to getS3Object', async () => {
-      mockGetS3Object.mockResolvedValueOnce(Buffer.from(JSON.stringify(expectedResult)))
-      await fetchContentFromS3(uuid)
+    const mockBuffer = jest.fn().mockReturnValue(expectedResult)
 
-      expect(mockGetS3Object).toHaveBeenCalledWith(`queue/${uuid}`)
+    beforeAll(() => {
+      const mockBody = {
+        on: jest.fn().mockImplementation((action, predicate) => {
+          if (action === 'data') {
+            const result = mockBuffer()
+            predicate(Buffer.from(JSON.stringify(result) ?? ''))
+          } else if (action === 'end') {
+            predicate()
+          }
+        }),
+      }
+      mockSend.mockResolvedValue({ Body: mockBody })
     })
 
-    test('expect parsed JSON returned', async () => {
-      mockGetS3Object.mockResolvedValueOnce(Buffer.from(JSON.stringify(expectedResult)))
+    test('expect key passed to S3 as object', async () => {
+      await fetchContentFromS3(uuid)
+
+      expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: key })
+    })
+
+    test('expect expectedObject as result', async () => {
       const result = await fetchContentFromS3(uuid)
 
       expect(result).toEqual(expect.objectContaining(expectedResult))
     })
 
     test('expect Buffer attachments parsed accordingly', async () => {
-      mockGetS3Object.mockResolvedValueOnce(Buffer.from(JSON.stringify(email)))
+      mockBuffer.mockReturnValueOnce(email)
       const result = await fetchContentFromS3(uuid)
 
       expect(result.attachments[0].content).toEqual(attachmentBuffer)
     })
 
-    test('expect non-Buffer attachments parsed accordingly', async () => {
+    test('expect non-Buffer attachments parsed and deleted accordingly', async () => {
       const content = 'colorless green ideas'
       const key = 'queue/message/attachment'
       const attachment = { ...email.attachments[0], content: key }
-      mockDeleteS3Object.mockResolvedValueOnce(undefined)
-      mockGetS3Object.mockResolvedValueOnce(Buffer.from(JSON.stringify({ ...email, attachments: [attachment] })))
-      mockGetS3Object.mockResolvedValueOnce(Buffer.from(content))
+      mockBuffer
+        .mockReturnValueOnce({ ...email, attachments: [attachment] })
+        .mockReturnValueOnce(content)
+        .mockReturnValueOnce(undefined)
       const result = await fetchContentFromS3(uuid)
 
-      expect(result.attachments[0].content).toEqual(Buffer.from(content))
-    })
-
-    test('expect non-Buffer attachments to be deleted', async () => {
-      const content = 'colorless green ideas'
-      const key = 'queue/message/attachment'
-      const attachment = { ...email.attachments[0], content: key }
-      mockDeleteS3Object.mockResolvedValueOnce(undefined)
-      mockGetS3Object.mockResolvedValueOnce(Buffer.from(JSON.stringify({ ...email, attachments: [attachment] })))
-      mockGetS3Object.mockResolvedValueOnce(Buffer.from(content))
-      await fetchContentFromS3(uuid)
-
-      expect(mockDeleteS3Object).toHaveBeenCalledWith(key)
+      expect(result.attachments[0].content).toEqual(Buffer.from(JSON.stringify(content)))
+      expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: `queue/${uuid}` })
+      expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: key })
+      expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: key })
+      expect(mockSend).toHaveBeenCalledTimes(3)
     })
   })
 
   describe('deleteContentFromS3', () => {
-    const mockDeleteS3Object = jest.spyOn(s3Module, 'deleteS3Object')
-
-    test('expect correct key passed to getS3Object', async () => {
-      await deleteContentFromS3(uuid)
-
-      expect(mockDeleteS3Object).toHaveBeenCalledWith(`queue/${uuid}`)
-    })
-  })
-
-  describe('getS3Object', () => {
-    const expectedObject = Buffer.from('thar-be-values-here')
-
-    const mockBuffer = {
-      on: jest.fn().mockImplementation((action, predicate) => {
-        if (action === 'data') {
-          predicate(expectedObject)
-        } else if (action === 'end') {
-          predicate()
-        }
-      }),
-    }
-
-    beforeAll(() => {
-      mockSend.mockResolvedValue({ Body: mockBuffer })
-    })
-
-    test('expect key passed to S3 as object', async () => {
-      await getS3Object(key)
-
-      expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: key })
-    })
-
-    test('expect expectedObject as result', async () => {
-      const result = await getS3Object(key)
-
-      expect(result).toEqual(expectedObject)
-    })
-  })
-
-  describe('deleteS3Object', () => {
     beforeAll(() => {
       mockSend.mockResolvedValue(undefined)
     })
 
-    test('expect key passed to S3 as object', async () => {
-      await deleteS3Object(key)
+    test('expect correct key passed to getS3Object', async () => {
+      await deleteContentFromS3(uuid)
 
       expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: key })
     })
