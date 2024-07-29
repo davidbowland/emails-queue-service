@@ -254,7 +254,4 @@ jobs:
       - name: Bump the minor version
         run: npm version minor
       - name: Push tag created by version bump
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
+        run: git push --follow-tags
