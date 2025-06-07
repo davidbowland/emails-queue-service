@@ -1,11 +1,11 @@
 import { mocked } from 'jest-mock'
 
-import * as logging from '@utils/logging'
-import * as messageProcessing from '@utils/message-processing'
-import * as s3 from '@services/s3'
-import * as ses from '@services/ses'
 import { email, record } from '../__mocks__'
 import { sqsPayloadProcessorHandler } from '@handlers/sqs-payload-processor'
+import * as s3 from '@services/s3'
+import * as ses from '@services/ses'
+import * as logging from '@utils/logging'
+import * as messageProcessing from '@utils/message-processing'
 
 jest.mock('@services/s3')
 jest.mock('@services/ses')
@@ -28,7 +28,7 @@ describe('sqs-payload-processor', () => {
       mocked(ses).sendRawEmail.mockResolvedValue(undefined)
     })
 
-    test('expect records to be fetched then deleted', async () => {
+    it('should fetch records then delete them', async () => {
       await sqsPayloadProcessorHandler(event, undefined, undefined)
 
       expect(mocked(messageProcessing).getDataFromRecord).toHaveBeenCalledWith(record)
@@ -40,7 +40,7 @@ describe('sqs-payload-processor', () => {
       expect(mocked(s3).deleteContentFromS3).toHaveBeenCalledWith(record.messageId)
     })
 
-    test('expect second record fetched when first rejects', async () => {
+    it('should fetch second record when first rejects', async () => {
       mocked(s3).fetchContentFromS3.mockRejectedValueOnce(undefined)
       await sqsPayloadProcessorHandler(event, undefined, undefined)
 
@@ -48,7 +48,7 @@ describe('sqs-payload-processor', () => {
       expect(mocked(s3).fetchContentFromS3).toHaveBeenCalledWith(record2.messageId)
     })
 
-    test('expect logError to be called when a message rejects', async () => {
+    it('should call logError when a message rejects', async () => {
       const error = 'big-fuzzy-error'
       mocked(s3).fetchContentFromS3.mockRejectedValueOnce(error)
       await sqsPayloadProcessorHandler(event, undefined, undefined)

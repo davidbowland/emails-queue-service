@@ -1,7 +1,7 @@
 import { deleteContentFromS3, fetchContentFromS3 } from '../services/s3'
 import { generateEmailFromData, sendRawEmail } from '../services/ses'
-import { log, logError } from '../utils/logging'
 import { SQSEvent, SQSHandler, SQSRecord } from '../types'
+import { log, logError } from '../utils/logging'
 import { getDataFromRecord } from '../utils/message-processing'
 
 /* Queue processing */

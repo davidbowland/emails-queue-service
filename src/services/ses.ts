@@ -1,8 +1,8 @@
 import { SendRawEmailCommand, SendRawEmailResponse, SESClient } from '@aws-sdk/client-ses'
 import MailComposer from 'nodemailer/lib/mail-composer'
 
-import { EmailData } from '../types'
 import { emailRegion } from '../config'
+import { EmailData } from '../types'
 import { xrayCapture } from '../utils/logging'
 
 const ses = xrayCapture(new SESClient({ apiVersion: '2010-12-01', region: emailRegion }))

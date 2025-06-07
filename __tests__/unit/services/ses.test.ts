@@ -1,5 +1,5 @@
-import { generateEmailFromData, sendRawEmail } from '@services/ses'
 import { email } from '../__mocks__'
+import { generateEmailFromData, sendRawEmail } from '@services/ses'
 
 const mockSend = jest.fn()
 jest.mock('@aws-sdk/client-ses', () => ({
@@ -21,7 +21,7 @@ jest.mock('nodemailer/lib/mail-composer', () =>
         }
       }),
     }),
-  }))
+  })),
 )
 jest.mock('@utils/logging', () => ({
   logError: jest.fn(),
@@ -36,19 +36,19 @@ describe('ses', () => {
       mockMailComposer.mockResolvedValue(expectedBuffer)
     })
 
-    test('expect MailComposer called with data', async () => {
+    it('should call MailComposer with data', async () => {
       await generateEmailFromData(email)
 
       expect(mockMailComposer).toHaveBeenCalledWith(email)
     })
 
-    test('expect MailComposer result to be returned', async () => {
+    it('should return MailComposer result', async () => {
       const result = await generateEmailFromData(email)
 
       expect(result).toEqual(expectedBuffer)
     })
 
-    test('expect MailComposer to reject on error', async () => {
+    it('should reject when MailComposer errors', async () => {
       const rejection = new Error()
       mockMailComposer.mockRejectedValueOnce(rejection)
 
@@ -61,7 +61,7 @@ describe('ses', () => {
       mockSend.mockResolvedValue(undefined)
     })
 
-    test('expect Buffer to be passed to SES', async () => {
+    it('should pass Buffer to SES', async () => {
       await sendRawEmail(expectedBuffer)
 
       expect(mockSend).toHaveBeenCalledWith({ RawMessage: { Data: expectedBuffer } })

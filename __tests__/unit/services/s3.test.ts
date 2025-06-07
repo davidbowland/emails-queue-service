@@ -1,6 +1,6 @@
 import { attachmentBuffer, email, uuid } from '../__mocks__'
-import { deleteContentFromS3, fetchContentFromS3 } from '@services/s3'
 import { emailBucket } from '@config'
+import { deleteContentFromS3, fetchContentFromS3 } from '@services/s3'
 
 const mockSend = jest.fn()
 jest.mock('@aws-sdk/client-s3', () => ({
@@ -36,26 +36,26 @@ describe('S3', () => {
       mockSend.mockResolvedValue({ Body: mockBody })
     })
 
-    test('expect key passed to S3 as object', async () => {
+    it('should pass key to S3 as object', async () => {
       await fetchContentFromS3(uuid)
 
       expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: key })
     })
 
-    test('expect expectedObject as result', async () => {
+    it('should return expectedObject as result', async () => {
       const result = await fetchContentFromS3(uuid)
 
       expect(result).toEqual(expect.objectContaining(expectedResult))
     })
 
-    test('expect Buffer attachments parsed accordingly', async () => {
+    it('should parse Buffer attachments accordingly', async () => {
       mockBuffer.mockReturnValueOnce(email)
       const result = await fetchContentFromS3(uuid)
 
       expect(result.attachments[0].content).toEqual(attachmentBuffer)
     })
 
-    test('expect non-Buffer attachments parsed and deleted accordingly', async () => {
+    it('should parse and delete non-Buffer attachments accordingly', async () => {
       const content = 'colorless green ideas'
       const key = 'queue/message/attachment'
       const attachment = { ...email.attachments[0], content: key }
@@ -78,7 +78,7 @@ describe('S3', () => {
       mockSend.mockResolvedValue(undefined)
     })
 
-    test('expect correct key passed to getS3Object', async () => {
+    it('should pass correct key to getS3Object', async () => {
       await deleteContentFromS3(uuid)
 
       expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: key })

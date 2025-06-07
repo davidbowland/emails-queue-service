@@ -5,10 +5,10 @@ import {
   GetObjectCommandOutput,
   S3Client,
 } from '@aws-sdk/client-s3'
-
-import { Attachment, AttachmentContent, EmailData } from '../types'
-import { emailBucket } from '../config'
 import { Readable } from 'stream'
+
+import { emailBucket } from '../config'
+import { Attachment, AttachmentContent, EmailData } from '../types'
 import { xrayCapture } from '../utils/logging'
 
 const s3 = xrayCapture(new S3Client({ apiVersion: '2006-03-01' }))
