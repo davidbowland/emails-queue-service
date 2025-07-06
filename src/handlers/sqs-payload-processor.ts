@@ -19,7 +19,7 @@ export const sqsPayloadProcessorHandler: SQSHandler = async (event: SQSEvent): P
   for (const record of event.Records) {
     try {
       await processSingleMessage(record)
-    } catch (error: any) {
+    } catch (error: unknown) {
       logError(error)
     }
   }
