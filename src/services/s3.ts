@@ -9,7 +9,7 @@ import { Readable } from 'stream'
 
 import { emailBucket } from '../config'
 import { Attachment, AttachmentContent, EmailData } from '../types'
-import { xrayCapture } from '../utils/logging'
+import { logError, xrayCapture } from '../utils/logging'
 
 const s3 = xrayCapture(new S3Client({ apiVersion: '2006-03-01' }))
 
@@ -32,8 +32,21 @@ const transformSingleAttachment = async (attachment: Attachment): Promise<Attach
   }
 }
 
-const transformAttachmentBuffers = (email: EmailData): Promise<AttachmentContent>[] =>
-  email.attachments ? (email.attachments as Attachment[]).map(transformSingleAttachment) : []
+const transformAttachmentBuffers = async (email: EmailData): Promise<AttachmentContent[]> => {
+  const attachments = email.attachments as Attachment[] | undefined
+  if (!attachments) return Promise.resolve([])
+
+  return attachments.reduce(
+    (acc: Promise<AttachmentContent[]>, curr: Attachment): Promise<AttachmentContent[]> =>
+      acc
+        .then((prev) => transformSingleAttachment(curr).then((attachment) => prev.concat(attachment)))
+        .catch((error) => {
+          logError(error)
+          return acc
+        }),
+    Promise.resolve([]),
+  )
+}
 
 /* Get */
 
@@ -54,7 +67,7 @@ const getS3Object = async (key: string): Promise<Buffer> => {
 export const fetchContentFromS3 = async (uuid: string): Promise<EmailData> => {
   const s3Data: Buffer = await getS3Object(`queue/${uuid}`)
   const email = JSON.parse(s3Data.toString('utf-8'))
-  const attachments = await Promise.all(transformAttachmentBuffers(email))
+  const attachments = await transformAttachmentBuffers(email)
   return {
     ...email,
     attachments,

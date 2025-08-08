@@ -10,7 +10,9 @@ jest.mock('@aws-sdk/client-s3', () => ({
     send: (...args) => mockSend(...args),
   })),
 }))
+const mockLogError = jest.fn()
 jest.mock('@utils/logging', () => ({
+  logError: (...args) => mockLogError(...args),
   xrayCapture: jest.fn().mockImplementation((x) => x),
 }))
 
@@ -70,6 +72,45 @@ describe('S3', () => {
       expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: key })
       expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: key })
       expect(mockSend).toHaveBeenCalledTimes(3)
+    })
+
+    it('should continue processing attachments even if one fails', async () => {
+      const content = 'successful attachment'
+      const failingKey = 'queue/message/failing-attachment'
+      const successKey = 'queue/message/success-attachment'
+      const failingAttachment = { ...email.attachments[0], content: failingKey }
+      const successAttachment = { ...email.attachments[0], content: successKey }
+
+      // Mock the main email fetch
+      const mockBody = {
+        on: jest.fn().mockImplementation((action, predicate) => {
+          if (action === 'data') {
+            const result = { ...email, attachments: [failingAttachment, successAttachment] }
+            predicate(Buffer.from(JSON.stringify(result)))
+          } else if (action === 'end') {
+            predicate()
+          }
+        }),
+      }
+
+      // Mock S3 calls: first for main email, then failing attachment, then successful attachment + delete
+      mockSend
+        .mockResolvedValueOnce({ Body: mockBody })
+        .mockRejectedValueOnce(new Error('S3 object not found'))
+        .mockResolvedValueOnce({
+          Body: {
+            on: jest.fn().mockImplementation((action, predicate) => {
+              if (action === 'data') predicate(Buffer.from(JSON.stringify(content)))
+              else if (action === 'end') predicate()
+            }),
+          },
+        })
+        .mockResolvedValueOnce(undefined)
+
+      const result = await fetchContentFromS3(uuid)
+
+      expect(result.attachments).toHaveLength(1)
+      expect(result.attachments[0].content).toEqual(Buffer.from(JSON.stringify(content)))
     })
   })
 
