@@ -1,7 +1,7 @@
 import { mocked } from 'jest-mock'
 
 import { email, record } from '../__mocks__'
-import { sqsPayloadProcessorHandler } from '@handlers/sqs-payload-processor'
+import { emailsToSendProcessorHandler } from '@handlers/emails-to-send-processor'
 import * as s3 from '@services/s3'
 import * as ses from '@services/ses'
 import * as logging from '@utils/logging'
@@ -12,12 +12,12 @@ jest.mock('@services/ses')
 jest.mock('@utils/logging')
 jest.mock('@utils/message-processing')
 
-describe('sqs-payload-processor', () => {
+describe('emails-to-send-processor', () => {
   beforeAll(() => {
     mocked(messageProcessing).getDataFromRecord.mockImplementation((record) => ({ uuid: record.messageId }))
   })
 
-  describe('sqsPayloadProcessorHandler', () => {
+  describe('emailsToSendProcessorHandler', () => {
     const expectedBuffer = Buffer.from('hello!')
     const record2 = { ...record, messageId: '8765rfg-76tfg-hui8yt-7trdf-gui567yfdf' }
     const event = { Records: [record, record2] }
@@ -29,7 +29,7 @@ describe('sqs-payload-processor', () => {
     })
 
     it('should fetch records then delete them', async () => {
-      await sqsPayloadProcessorHandler(event, undefined, undefined)
+      await emailsToSendProcessorHandler(event, undefined, undefined)
 
       expect(mocked(messageProcessing).getDataFromRecord).toHaveBeenCalledWith(record)
       expect(mocked(messageProcessing).getDataFromRecord).toHaveBeenCalledWith(record2)
@@ -42,7 +42,7 @@ describe('sqs-payload-processor', () => {
 
     it('should fetch second record when first rejects', async () => {
       mocked(s3).fetchContentFromS3.mockRejectedValueOnce(undefined)
-      await sqsPayloadProcessorHandler(event, undefined, undefined)
+      await emailsToSendProcessorHandler(event, undefined, undefined)
 
       expect(mocked(messageProcessing).getDataFromRecord).toHaveBeenCalledWith(record2)
       expect(mocked(s3).fetchContentFromS3).toHaveBeenCalledWith(record2.messageId)
@@ -51,7 +51,7 @@ describe('sqs-payload-processor', () => {
     it('should call logError when a message rejects', async () => {
       const error = 'big-fuzzy-error'
       mocked(s3).fetchContentFromS3.mockRejectedValueOnce(error)
-      await sqsPayloadProcessorHandler(event, undefined, undefined)
+      await emailsToSendProcessorHandler(event, undefined, undefined)
 
       expect(mocked(s3).fetchContentFromS3).toHaveBeenCalledWith(record2.messageId)
       expect(mocked(logging).logError).toHaveBeenCalledWith(error)

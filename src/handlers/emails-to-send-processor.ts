@@ -14,7 +14,7 @@ const processSingleMessage = async (record: SQSRecord): Promise<void> => {
   await deleteContentFromS3(data.uuid)
 }
 
-export const sqsPayloadProcessorHandler: SQSHandler = async (event: SQSEvent): Promise<void> => {
+export const emailsToSendProcessorHandler: SQSHandler = async (event: SQSEvent): Promise<void> => {
   log('Received payload', event)
   for (const record of event.Records) {
     try {

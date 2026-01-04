@@ -116,7 +116,7 @@ log('Processing email', { to: 'user@domain.com' }) // BAD - PII
 
 ```typescript
 // 1. Handler Level - Always catch and log, never throw:
-export const sqsPayloadProcessorHandler = async (event: SQSEvent): Promise<void> => {
+export const emailsToSendProcessorHandler = async (event: SQSEvent): Promise<void> => {
   for (const record of event.Records) {
     try {
       await processSingleMessage(record)

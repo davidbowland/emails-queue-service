@@ -19,23 +19,26 @@ Mappings:
     prod:
       bucket: emails-service-storage
       domain: dbowland.com
-      errorTopic: arn:aws:sns:us-east-1:494887012091:error-topic
       logStreamFunction: log-subscriber
       project: emails-queue-service
+      queueName: emails-to-send
     test:
       bucket: emails-service-storage-test
       domain: bowland.link
-      errorTopic: arn:aws:sns:us-east-1:494887012091:error-topic-test
       logStreamFunction: log-subscriber-test
       project: emails-queue-service-test
+      queueName: emails-to-send-test
 
 Resources:
-  SimpleQueue:
+  EmailsToSendQueue:
     Type: AWS::SQS::Queue
     Properties:
       FifoQueue: true
       KmsMasterKeyId: alias/aws/sqs
       MessageRetentionPeriod: 1209600 # 14 days
+      QueueName: !Sub
+        - '${Name}.fifo'
+        - Name: !FindInMap [EnvironmentMap, !Ref Environment, queueName]
       ReceiveMessageWaitTimeSeconds: 20
       Tags:
         - Key: 'created-by'
@@ -46,7 +49,7 @@ Resources:
           Value: !Ref Environment
       VisibilityTimeout: 60
 
-  SQSPayloadProcessor:
+  EmailsToSendProcessor:
     Type: AWS::Serverless::Function
     Properties:
       Architectures:
@@ -62,8 +65,8 @@ Resources:
           Type: SQS
           Properties:
             BatchSize: 7
-            Queue: !GetAtt SimpleQueue.Arn
-      Handler: src/handlers/sqs-payload-processor.sqsPayloadProcessorHandler
+            Queue: !GetAtt EmailsToSendQueue.Arn
+      Handler: src/handlers/emails-to-send-processor.emailsToSendProcessorHandler
       MemorySize: 128
       Policies:
         # Give Lambda basic execution Permission
@@ -76,7 +79,7 @@ Resources:
             IdentityName: !FindInMap [EnvironmentMap, !Ref Environment, domain]
         # Grant access to SQS queue
         - SQSPollerPolicy:
-            QueueName: !GetAtt SimpleQueue.QueueName
+            QueueName: !GetAtt EmailsToSendQueue.QueueName
       Runtime: nodejs22.x
       Tags:
         'created-by': 'emails-queue-service'
@@ -91,13 +94,12 @@ Resources:
         Target: 'es2020'
         Sourcemap: true
         EntryPoints:
-          - src/handlers/sqs-payload-processor.ts
+          - src/handlers/emails-to-send-processor.ts
 
-  LambdaLogGroup:
+  EmailsToSendLogGroup:
     Type: AWS::Logs::LogGroup
-    DependsOn: [SQSPayloadProcessor]
     Properties:
-      LogGroupName: !Sub /aws/lambda/${SQSPayloadProcessor}
+      LogGroupName: !Sub /aws/lambda/${EmailsToSendProcessor}
       RetentionInDays: 30
       Tags:
         - Key: 'created-by'
@@ -107,11 +109,11 @@ Resources:
         - Key: 'environment'
           Value: !Ref Environment
 
-  LambdaLogGroupSubscription:
+  EmailsToSendLogGroupSubscription:
     Type: AWS::Logs::SubscriptionFilter
     Properties:
       DestinationArn: !Sub
         - 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${Function}'
         - Function: !FindInMap [EnvironmentMap, !Ref Environment, logStreamFunction]
       FilterPattern: '[timestamp, uuid, level="ERROR", message]'
-      LogGroupName: !Ref LambdaLogGroup
+      LogGroupName: !Ref EmailsToSendLogGroup
