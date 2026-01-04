@@ -1,11 +1,12 @@
 import { email } from '../__mocks__'
-import { generateEmailFromData, sendRawEmail } from '@services/ses'
+import { generateEmailFromData, sendBounce, sendRawEmail } from '@services/ses'
 
 const mockSend = jest.fn()
 jest.mock('@aws-sdk/client-ses', () => ({
+  SendBounceCommand: jest.fn().mockImplementation((x) => x),
   SendRawEmailCommand: jest.fn().mockImplementation((x) => x),
   SESClient: jest.fn(() => ({
-    send: (...args) => mockSend(...args),
+    send: (...args: any[]) => mockSend(...args),
   })),
 }))
 const mockMailComposer = jest.fn()
@@ -24,6 +25,7 @@ jest.mock('nodemailer/lib/mail-composer', () =>
   })),
 )
 jest.mock('@utils/logging', () => ({
+  log: jest.fn(),
   logError: jest.fn(),
   xrayCapture: jest.fn().mockImplementation((x) => x),
 }))
@@ -65,6 +67,65 @@ describe('ses', () => {
       await sendRawEmail(expectedBuffer)
 
       expect(mockSend).toHaveBeenCalledWith({ RawMessage: { Data: expectedBuffer } })
+    })
+  })
+
+  describe('sendBounce', () => {
+    const originalMessageId = 'test-message-id-123'
+    const bouncedRecipients = ['bounce1@example.com', 'bounce2@example.com']
+    const bounceSender = 'noreply@example.com'
+
+    beforeAll(() => {
+      mockSend.mockResolvedValue(undefined)
+    })
+
+    it('should send bounce with default values when no options provided', async () => {
+      await sendBounce(originalMessageId, bouncedRecipients, bounceSender)
+
+      expect(mockSend).toHaveBeenCalledWith({
+        BouncedRecipientInfoList: [
+          {
+            BounceType: 'ContentRejected',
+            Recipient: 'bounce1@example.com',
+          },
+          {
+            BounceType: 'ContentRejected',
+            Recipient: 'bounce2@example.com',
+          },
+        ],
+        BounceSender: bounceSender,
+        OriginalMessageId: originalMessageId,
+      })
+    })
+
+    it('should send bounce with custom options when provided', async () => {
+      const options = {
+        bounceType: 'ExceededQuota' as const,
+      } as any
+
+      await sendBounce(originalMessageId, bouncedRecipients, bounceSender, options)
+
+      expect(mockSend).toHaveBeenCalledWith({
+        BouncedRecipientInfoList: [
+          {
+            BounceType: 'ExceededQuota',
+            Recipient: 'bounce1@example.com',
+          },
+          {
+            BounceType: 'ExceededQuota',
+            Recipient: 'bounce2@example.com',
+          },
+        ],
+        BounceSender: bounceSender,
+        OriginalMessageId: originalMessageId,
+      })
+    })
+
+    it('should throw error when SES send fails', async () => {
+      const sesError = new Error('SES service error')
+      mockSend.mockRejectedValueOnce(sesError)
+
+      await expect(sendBounce(originalMessageId, bouncedRecipients, bounceSender)).rejects.toThrow('SES service error')
     })
   })
 })

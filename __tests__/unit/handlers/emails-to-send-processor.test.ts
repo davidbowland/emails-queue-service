@@ -33,8 +33,8 @@ describe('emails-to-send-processor', () => {
 
       expect(mocked(messageProcessing).getDataFromRecord).toHaveBeenCalledWith(record)
       expect(mocked(messageProcessing).getDataFromRecord).toHaveBeenCalledWith(record2)
-      expect(mocked(s3).fetchContentFromS3).toHaveBeenCalledWith(record.messageId)
-      expect(mocked(s3).fetchContentFromS3).toHaveBeenCalledWith(record2.messageId)
+      expect(mocked(s3).fetchContentFromS3).toHaveBeenCalledWith(record.messageId, 'queue')
+      expect(mocked(s3).fetchContentFromS3).toHaveBeenCalledWith(record2.messageId, 'queue')
       expect(mocked(ses).generateEmailFromData).toHaveBeenCalledWith(email)
       expect(mocked(ses).sendRawEmail).toHaveBeenCalledWith(expectedBuffer)
       expect(mocked(s3).deleteContentFromS3).toHaveBeenCalledWith(record.messageId)
@@ -45,7 +45,7 @@ describe('emails-to-send-processor', () => {
       await emailsToSendProcessorHandler(event, undefined, undefined)
 
       expect(mocked(messageProcessing).getDataFromRecord).toHaveBeenCalledWith(record2)
-      expect(mocked(s3).fetchContentFromS3).toHaveBeenCalledWith(record2.messageId)
+      expect(mocked(s3).fetchContentFromS3).toHaveBeenCalledWith(record2.messageId, 'queue')
     })
 
     it('should call logError when a message rejects', async () => {
@@ -53,7 +53,7 @@ describe('emails-to-send-processor', () => {
       mocked(s3).fetchContentFromS3.mockRejectedValueOnce(error)
       await emailsToSendProcessorHandler(event, undefined, undefined)
 
-      expect(mocked(s3).fetchContentFromS3).toHaveBeenCalledWith(record2.messageId)
+      expect(mocked(s3).fetchContentFromS3).toHaveBeenCalledWith(record2.messageId, 'queue')
       expect(mocked(logging).logError).toHaveBeenCalledWith(error)
     })
   })

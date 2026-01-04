@@ -1,6 +1,6 @@
 # Lambdas for Email Queue Service
 
-Lambdas for email queue service, which processes and sends the outbound SES queue.
+Lambdas for email queue service, which processes and sends the outbound SQS queue. Emails can be sent or bounced.
 
 ## Setup
 

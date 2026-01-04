@@ -1,0 +1,15 @@
+{
+  "Records": [
+    {
+      "DelaySeconds": 10,
+      "MessageAttributes": {
+        "Sender": {
+          "DataType": "String",
+          "StringValue": "sqs-bounce-processor"
+        }
+      },
+      "body": "{ \"uuid\": \"bounce-uuid-47fa66c0-626e-11ec-824b-3b5ff6254c28\" }",
+      "QueueUrl": "SQS_BOUNCE_QUEUE_URL"
+    }
+  ]
+}

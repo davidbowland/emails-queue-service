@@ -1,4 +1,4 @@
-import { EmailData, SQSRecord } from '@types'
+import { EmailData, SQSRecord, BounceData } from '@types'
 
 export const attachmentBuffer = Buffer.from("What's up party people?")
 
@@ -58,3 +58,10 @@ export const record: SQSRecord = {
 export const event = { Records: [record] }
 
 export const uuid = 'aaaaa-uuuuu-uuuuu-iiiii-ddddd'
+
+export const bounceData: BounceData = {
+  bounceSender: 'noreply@example.com',
+  bounceType: 'DoesNotExist',
+  messageId: 'original-message-id-123',
+  recipients: ['bounce1@example.com', 'bounce2@example.com'],
+}

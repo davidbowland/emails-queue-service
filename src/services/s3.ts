@@ -8,7 +8,7 @@ import {
 import { Readable } from 'stream'
 
 import { emailBucket } from '../config'
-import { Attachment, AttachmentContent, EmailData } from '../types'
+import { Attachment, AttachmentContent } from '../types'
 import { logError, xrayCapture } from '../utils/logging'
 
 const s3 = xrayCapture(new S3Client({ apiVersion: '2006-03-01' }))
@@ -32,10 +32,7 @@ const transformSingleAttachment = async (attachment: Attachment): Promise<Attach
   }
 }
 
-const transformAttachmentBuffers = async (email: EmailData): Promise<AttachmentContent[]> => {
-  const attachments = email.attachments as Attachment[] | undefined
-  if (!attachments) return Promise.resolve([])
-
+const transformAttachmentBuffers = async (attachments: Attachment[]): Promise<AttachmentContent[]> => {
   return attachments.reduce(
     (acc: Promise<AttachmentContent[]>, curr: Attachment): Promise<AttachmentContent[]> =>
       acc
@@ -64,14 +61,19 @@ const getS3Object = async (key: string): Promise<Buffer> => {
   return readableToBuffer(response.Body as Readable)
 }
 
-export const fetchContentFromS3 = async (uuid: string): Promise<EmailData> => {
-  const s3Data: Buffer = await getS3Object(`queue/${uuid}`)
-  const email = JSON.parse(s3Data.toString('utf-8'))
-  const attachments = await transformAttachmentBuffers(email)
-  return {
-    ...email,
-    attachments,
+export const fetchContentFromS3 = async <T = any>(uuid: string, prefix: string = 'queue'): Promise<T> => {
+  const s3Data: Buffer = await getS3Object(`${prefix}/${uuid}`)
+  const data = JSON.parse(s3Data.toString('utf-8'))
+
+  if (data.attachments) {
+    const attachments = await transformAttachmentBuffers(data.attachments)
+    return {
+      ...data,
+      attachments,
+    } as T
   }
+
+  return data as T
 }
 
 /* Delete */
@@ -81,4 +83,5 @@ const deleteS3Object = async (key: string): Promise<DeleteObjectOutput> => {
   return s3.send(command)
 }
 
-export const deleteContentFromS3 = (uuid: string): Promise<DeleteObjectOutput> => deleteS3Object(`queue/${uuid}`)
+export const deleteContentFromS3 = (uuid: string, prefix: string = 'queue'): Promise<DeleteObjectOutput> =>
+  deleteS3Object(`${prefix}/${uuid}`)

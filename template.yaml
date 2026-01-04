@@ -21,15 +21,19 @@ Mappings:
       domain: dbowland.com
       logStreamFunction: log-subscriber
       project: emails-queue-service
-      queueName: emails-to-send
+      queueNameBounce: emails-to-bounce
+      queueNameSend: emails-to-send
     test:
       bucket: emails-service-storage-test
       domain: bowland.link
       logStreamFunction: log-subscriber-test
       project: emails-queue-service-test
-      queueName: emails-to-send-test
+      queueNameBounce: emails-to-bounce-test
+      queueNameSend: emails-to-send-test
 
 Resources:
+  # Emails to Send
+
   EmailsToSendQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -38,7 +42,7 @@ Resources:
       MessageRetentionPeriod: 1209600 # 14 days
       QueueName: !Sub
         - '${Name}.fifo'
-        - Name: !FindInMap [EnvironmentMap, !Ref Environment, queueName]
+        - Name: !FindInMap [EnvironmentMap, !Ref Environment, queueNameSend]
       ReceiveMessageWaitTimeSeconds: 20
       Tags:
         - Key: 'created-by'
@@ -54,10 +58,9 @@ Resources:
     Properties:
       Architectures:
         - x86_64
-      Description: Processes queued messages to send emails.
+      Description: Processes queued messages to send emails
       Environment:
         Variables:
-          DOMAIN: !FindInMap [EnvironmentMap, !Ref Environment, domain]
           EMAIL_BUCKET: !FindInMap [EnvironmentMap, !Ref Environment, bucket]
           EMAIL_REGION: us-east-1
       Events:
@@ -67,7 +70,7 @@ Resources:
             BatchSize: 7
             Queue: !GetAtt EmailsToSendQueue.Arn
       Handler: src/handlers/emails-to-send-processor.emailsToSendProcessorHandler
-      MemorySize: 128
+      MemorySize: 1536
       Policies:
         # Give Lambda basic execution Permission
         - AWSLambdaBasicExecutionRole
@@ -117,3 +120,92 @@ Resources:
         - Function: !FindInMap [EnvironmentMap, !Ref Environment, logStreamFunction]
       FilterPattern: '[timestamp, uuid, level="ERROR", message]'
       LogGroupName: !Ref EmailsToSendLogGroup
+
+  # Emails to Bounce
+
+  EmailsToBounceQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      FifoQueue: true
+      KmsMasterKeyId: alias/aws/sqs
+      MessageRetentionPeriod: 1209600 # 14 days
+      QueueName: !Sub
+        - '${Name}.fifo'
+        - Name: !FindInMap [EnvironmentMap, !Ref Environment, queueNameBounce]
+      ReceiveMessageWaitTimeSeconds: 20
+      Tags:
+        - Key: 'created-by'
+          Value: 'emails-queue-service'
+        - Key: 'created-for'
+          Value: 'emails'
+        - Key: 'environment'
+          Value: !Ref Environment
+      VisibilityTimeout: 60
+
+  EmailsToBounceProcessor:
+    Type: AWS::Serverless::Function
+    Properties:
+      Architectures:
+        - x86_64
+      Description: Processes queued messages to bounce emails
+      Environment:
+        Variables:
+          EMAIL_BUCKET: !FindInMap [EnvironmentMap, !Ref Environment, bucket]
+          EMAIL_REGION: us-east-1
+      Events:
+        SQSQueueEvent:
+          Type: SQS
+          Properties:
+            BatchSize: 1
+            Queue: !GetAtt EmailsToBounceQueue.Arn
+      Handler: src/handlers/emails-to-bounce-processor.emailsToBounceProcessorHandler
+      MemorySize: 1024
+      Policies:
+        # Give Lambda basic execution Permission
+        - AWSLambdaBasicExecutionRole
+        # Grant access to S3 bucket
+        - S3CrudPolicy:
+            BucketName: !FindInMap [EnvironmentMap, !Ref Environment, bucket]
+        # Grant access to SQS queue
+        - SQSPollerPolicy:
+            QueueName: !GetAtt EmailsToBounceQueue.QueueName
+        # Grant access to send bounces
+        - SESSendBouncePolicy:
+            IdentityName: !FindInMap [EnvironmentMap, !Ref Environment, domain]
+      Runtime: nodejs22.x
+      Tags:
+        'created-by': 'emails-queue-service'
+        'created-for': 'emails'
+        'environment': !Ref Environment
+      Timeout: 60
+      Tracing: Active
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: 'es2020'
+        Sourcemap: true
+        EntryPoints:
+          - src/handlers/emails-to-bounce-processor.ts
+
+  EmailsToBounceLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${EmailsToBounceProcessor}
+      RetentionInDays: 30
+      Tags:
+        - Key: 'created-by'
+          Value: 'emails-queue-service'
+        - Key: 'created-for'
+          Value: 'emails'
+        - Key: 'environment'
+          Value: !Ref Environment
+
+  EmailsToBounceLogGroupSubscription:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties:
+      DestinationArn: !Sub
+        - 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${Function}'
+        - Function: !FindInMap [EnvironmentMap, !Ref Environment, logStreamFunction]
+      FilterPattern: '[timestamp, uuid, level="ERROR", message]'
+      LogGroupName: !Ref EmailsToBounceLogGroup

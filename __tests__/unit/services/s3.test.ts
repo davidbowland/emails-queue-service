@@ -44,6 +44,21 @@ describe('S3', () => {
       expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: key })
     })
 
+    it('should use custom prefix when provided', async () => {
+      const customPrefix = 'queue-bounced'
+      const customKey = `${customPrefix}/${uuid}`
+
+      await fetchContentFromS3(uuid, customPrefix)
+
+      expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: customKey })
+    })
+
+    it('should use default prefix "queue" when no prefix provided', async () => {
+      await fetchContentFromS3(uuid)
+
+      expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: `queue/${uuid}` })
+    })
+
     it('should return expectedObject as result', async () => {
       const result = await fetchContentFromS3(uuid)
 
@@ -123,6 +138,21 @@ describe('S3', () => {
       await deleteContentFromS3(uuid)
 
       expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: key })
+    })
+
+    it('should use custom prefix when provided', async () => {
+      const customPrefix = 'queue-bounced'
+      const customKey = `${customPrefix}/${uuid}`
+
+      await deleteContentFromS3(uuid, customPrefix)
+
+      expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: customKey })
+    })
+
+    it('should use default prefix "queue" when no prefix provided', async () => {
+      await deleteContentFromS3(uuid)
+
+      expect(mockSend).toHaveBeenCalledWith({ Bucket: emailBucket, Key: `queue/${uuid}` })
     })
   })
 })
