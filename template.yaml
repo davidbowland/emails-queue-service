@@ -83,7 +83,7 @@ Resources:
         # Grant access to SQS queue
         - SQSPollerPolicy:
             QueueName: !GetAtt EmailsToSendQueue.QueueName
-      Runtime: nodejs22.x
+      Runtime: nodejs24.x
       Tags:
         'created-by': 'emails-queue-service'
         'created-for': 'emails'
@@ -172,7 +172,7 @@ Resources:
         # Grant access to send bounces
         - SESSendBouncePolicy:
             IdentityName: !FindInMap [EnvironmentMap, !Ref Environment, domain]
-      Runtime: nodejs22.x
+      Runtime: nodejs24.x
       Tags:
         'created-by': 'emails-queue-service'
         'created-for': 'emails'
