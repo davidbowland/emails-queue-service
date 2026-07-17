@@ -51,7 +51,7 @@ Resources:
           Value: 'emails'
         - Key: 'environment'
           Value: !Ref Environment
-      VisibilityTimeout: 60
+      VisibilityTimeout: 360 # 6x the processor's Timeout, per AWS guidance, to avoid redelivery mid-invocation
 
   EmailsToSendProcessor:
     Type: AWS::Serverless::Function
@@ -140,7 +140,7 @@ Resources:
           Value: 'emails'
         - Key: 'environment'
           Value: !Ref Environment
-      VisibilityTimeout: 60
+      VisibilityTimeout: 360 # 6x the processor's Timeout, per AWS guidance, to avoid redelivery mid-invocation
 
   EmailsToBounceProcessor:
     Type: AWS::Serverless::Function
