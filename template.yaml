@@ -6,6 +6,10 @@ Transform:
   - AWS::Serverless-2016-10-31
 
 Parameters:
+  AlertEmailAddress:
+    Type: String
+    NoEcho: true
+    Description: Address that receives dead-letter queue alarm notifications
   Environment:
     Type: String
     Default: prod
@@ -43,6 +47,9 @@ Resources:
       QueueName: !Sub
         - '${Name}.fifo'
         - Name: !FindInMap [EnvironmentMap, !Ref Environment, queueNameSend]
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt EmailsToSendDeadLetterQueue.Arn
+        maxReceiveCount: 3
       ReceiveMessageWaitTimeSeconds: 20
       Tags:
         - Key: 'created-by'
@@ -52,6 +59,27 @@ Resources:
         - Key: 'environment'
           Value: !Ref Environment
       VisibilityTimeout: 360 # 6x the processor's Timeout, per AWS guidance, to avoid redelivery mid-invocation
+
+  # A FIFO queue can only dead-letter to another FIFO queue
+  EmailsToSendDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      FifoQueue: true
+      KmsMasterKeyId: alias/aws/sqs
+      MessageRetentionPeriod: 1209600 # 14 days
+      QueueName: !Sub
+        - '${Name}-dlq.fifo'
+        - Name: !FindInMap [EnvironmentMap, !Ref Environment, queueNameSend]
+      # Long polling matters here only for the operator: nothing consumes this
+      # queue, and short polling can report it empty when it is not.
+      ReceiveMessageWaitTimeSeconds: 20
+      Tags:
+        - Key: 'created-by'
+          Value: 'emails-queue-service'
+        - Key: 'created-for'
+          Value: 'emails'
+        - Key: 'environment'
+          Value: !Ref Environment
 
   EmailsToSendProcessor:
     Type: AWS::Serverless::Function
@@ -67,7 +95,15 @@ Resources:
         SQSQueueEvent:
           Type: SQS
           Properties:
-            BatchSize: 7
+            # BatchSize 1, matching the bounce queue. Every message shares one MessageGroupId, so the
+            # queue is already serialized to concurrency 1 and a larger batch buys no throughput --
+            # but it does widen the blast radius. Fail-forward correctly returns the failing record
+            # and everything behind it, and SQS increments ReceiveCount on redelivery even for
+            # records the loop never attempted, so at maxReceiveCount 3 one poison message would
+            # dead-letter up to six untried emails with it. Their senders already got a 201.
+            BatchSize: 1
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
             Queue: !GetAtt EmailsToSendQueue.Arn
       Handler: src/handlers/emails-to-send-processor.emailsToSendProcessorHandler
       MemorySize: 1536
@@ -112,14 +148,12 @@ Resources:
         - Key: 'environment'
           Value: !Ref Environment
 
-  EmailsToSendLogGroupSubscription:
-    Type: AWS::Logs::SubscriptionFilter
-    Properties:
-      DestinationArn: !Sub
-        - 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${Function}'
-        - Function: !FindInMap [EnvironmentMap, !Ref Environment, logStreamFunction]
-      FilterPattern: '[timestamp, uuid, level="ERROR", message]'
-      LogGroupName: !Ref EmailsToSendLogGroup
+  # EmailsToSendLogGroup is deliberately not subscribed to log-subscriber. log-subscriber sends its
+  # alerts by email, which is the pipeline this log group belongs to, so a subscription here would
+  # make every failed send log an ERROR that enqueues another email, which fails the same way. The
+  # send path is therefore not alerted through the logs at all; failures land in
+  # EmailsToSendDeadLetterQueue and raise EmailsToSendDeadLetterQueueAlarm over SNS instead. The
+  # bounce path below is not on log-subscriber's send path and stays subscribed.
 
   # Emails to Bounce
 
@@ -132,6 +166,9 @@ Resources:
       QueueName: !Sub
         - '${Name}.fifo'
         - Name: !FindInMap [EnvironmentMap, !Ref Environment, queueNameBounce]
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt EmailsToBounceDeadLetterQueue.Arn
+        maxReceiveCount: 3
       ReceiveMessageWaitTimeSeconds: 20
       Tags:
         - Key: 'created-by'
@@ -141,6 +178,27 @@ Resources:
         - Key: 'environment'
           Value: !Ref Environment
       VisibilityTimeout: 360 # 6x the processor's Timeout, per AWS guidance, to avoid redelivery mid-invocation
+
+  # A FIFO queue can only dead-letter to another FIFO queue
+  EmailsToBounceDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      FifoQueue: true
+      KmsMasterKeyId: alias/aws/sqs
+      MessageRetentionPeriod: 1209600 # 14 days
+      QueueName: !Sub
+        - '${Name}-dlq.fifo'
+        - Name: !FindInMap [EnvironmentMap, !Ref Environment, queueNameBounce]
+      # Long polling matters here only for the operator: nothing consumes this
+      # queue, and short polling can report it empty when it is not.
+      ReceiveMessageWaitTimeSeconds: 20
+      Tags:
+        - Key: 'created-by'
+          Value: 'emails-queue-service'
+        - Key: 'created-for'
+          Value: 'emails'
+        - Key: 'environment'
+          Value: !Ref Environment
 
   EmailsToBounceProcessor:
     Type: AWS::Serverless::Function
@@ -157,6 +215,8 @@ Resources:
           Type: SQS
           Properties:
             BatchSize: 1
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
             Queue: !GetAtt EmailsToBounceQueue.Arn
       Handler: src/handlers/emails-to-bounce-processor.emailsToBounceProcessorHandler
       MemorySize: 1024
@@ -209,3 +269,102 @@ Resources:
         - Function: !FindInMap [EnvironmentMap, !Ref Environment, logStreamFunction]
       FilterPattern: '[timestamp, uuid, level="ERROR", message]'
       LogGroupName: !Ref EmailsToBounceLogGroup
+
+  # Dead-letter queue alarms
+
+  # SNS delivers this mail itself and never enters emails-queue-api, so alerting about a broken
+  # email pipeline does not depend on that pipeline. The topic is deliberately unencrypted: a
+  # CloudWatch alarm cannot publish to a topic encrypted with the AWS-managed alias/aws/sns key,
+  # and the notification carries only a queue name and a message count, never message content.
+  DeadLetterQueueAlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint: !Ref AlertEmailAddress
+          Protocol: email
+      Tags:
+        - Key: 'created-by'
+          Value: 'emails-queue-service'
+        - Key: 'created-for'
+          Value: 'emails'
+        - Key: 'environment'
+          Value: !Ref Environment
+      TopicName: !Sub
+        - '${Project}-dead-letter-queue-alarms'
+        - Project: !FindInMap [EnvironmentMap, !Ref Environment, project]
+
+  # Maximum, not Sum or Average: ApproximateNumberOfMessagesVisible is a gauge, so summing the
+  # datapoints in a period counts the same backlog repeatedly and averaging hides a message that
+  # arrives late in the period. One datapoint over a 5-minute period is enough to fire, because
+  # anything reaching a DLQ has already failed maxReceiveCount times and needs no further
+  # confirmation. TreatMissingData is ignore rather than notBreaching: SQS stops publishing metrics
+  # for an idle queue, and nothing polls these queues, so a DLQ holding one message can go quiet
+  # while still holding it. notBreaching would clear the alarm; ignore holds the last real state,
+  # so the alarm stays raised until someone drains the queue and the metric reports zero again.
+  EmailsToSendDeadLetterQueueAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref DeadLetterQueueAlarmTopic
+      # The alarm is effectively one-shot: nothing consumes these queues, so once it transitions to
+      # ALARM it stays there until a human drains the DLQ and SQS publishes a zero. A second, larger
+      # incident while it is already raised notifies nobody. OKActions make the clear visible, so
+      # draining the queue is an observable act rather than silent housekeeping.
+      OKActions:
+        - !Ref DeadLetterQueueAlarmTopic
+      AlarmDescription: An email failed every send attempt and is now stuck in the dead-letter queue
+      AlarmName: !Sub
+        - '${Name}-dlq-not-empty'
+        - Name: !FindInMap [EnvironmentMap, !Ref Environment, queueNameSend]
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt EmailsToSendDeadLetterQueue.QueueName
+      EvaluationPeriods: 1
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Period: 300
+      Statistic: Maximum
+      Tags:
+        - Key: 'created-by'
+          Value: 'emails-queue-service'
+        - Key: 'created-for'
+          Value: 'emails'
+        - Key: 'environment'
+          Value: !Ref Environment
+      Threshold: 0
+      TreatMissingData: ignore
+
+  EmailsToBounceDeadLetterQueueAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref DeadLetterQueueAlarmTopic
+      # The alarm is effectively one-shot: nothing consumes these queues, so once it transitions to
+      # ALARM it stays there until a human drains the DLQ and SQS publishes a zero. A second, larger
+      # incident while it is already raised notifies nobody. OKActions make the clear visible, so
+      # draining the queue is an observable act rather than silent housekeeping.
+      OKActions:
+        - !Ref DeadLetterQueueAlarmTopic
+      AlarmDescription: A bounce failed every send attempt and is now stuck in the dead-letter queue
+      AlarmName: !Sub
+        - '${Name}-dlq-not-empty'
+        - Name: !FindInMap [EnvironmentMap, !Ref Environment, queueNameBounce]
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt EmailsToBounceDeadLetterQueue.QueueName
+      EvaluationPeriods: 1
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Period: 300
+      Statistic: Maximum
+      Tags:
+        - Key: 'created-by'
+          Value: 'emails-queue-service'
+        - Key: 'created-for'
+          Value: 'emails'
+        - Key: 'environment'
+          Value: !Ref Environment
+      Threshold: 0
+      TreatMissingData: ignore

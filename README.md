@@ -70,10 +70,10 @@ npm run lint
 
 Deployment is handled by the GitHub Actions pipeline (`.github/workflows/pipeline.yaml`). On every push, unit tests run first. Pushes to `master` then `sam build` (esbuild, bundling each handler) and `sam package` the stack, deploy it to the testing account, and finally deploy the same packaged template to production. Feature branches instead build and deploy directly to the single shared `emails-queue-service-test` stack (not a stack unique to the branch — concurrent feature branches overwrite whatever was deployed there previously). After a successful production deploy, a final job bumps the package version and pushes the tag.
 
-To build and deploy manually (requires the `developer` role, see Setup above):
+To build and deploy manually (requires the `developer` role, see Setup above). `ALERT_EMAIL_ADDRESS` is the destination for the dead-letter queue alarms; it is not committed to the repo, and the pipeline supplies it from the `ALERT_EMAIL_ADDRESS` repository secret:
 
 ```bash
-npm run deploy
+ALERT_EMAIL_ADDRESS=you@example.com npm run deploy
 ```
 
 ## Additional Documentation

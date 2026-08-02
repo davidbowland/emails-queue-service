@@ -41,6 +41,21 @@ jobs:
           NODE_ENV: test
       - name: Run tests
         run: npm run test
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Install Python 3
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install AWS SAM
+        uses: aws-actions/setup-sam@v3
+      # --lint is required twice over, so do not "simplify" it away. Plain sam validate exits
+      # non-zero without a configured region, and this job has no AWS credentials. It also
+      # accepts a misspelled FunctionResponseTypes value, which would silently disable the
+      # partial batch responses the handlers depend on, with no deploy-time error; --lint
+      # rejects it as E3030.
+      - name: Validate template
+        run: sam validate --template ${SAM_TEMPLATE} --lint
 
   build-and-deploy-feature:
     name: Deploy feature branch
@@ -77,6 +92,8 @@ jobs:
 
       - name: Deploy to feature stack in the testing account
         shell: bash
+        env:
+          ALERT_EMAIL_ADDRESS: ${{ secrets.ALERT_EMAIL_ADDRESS }}
         run: |
           sam deploy --stack-name ${TESTING_STACK_NAME} \
             --capabilities CAPABILITY_IAM \
@@ -85,7 +102,7 @@ jobs:
             --s3-prefix ${TESTING_STACK_NAME} \
             --no-fail-on-empty-changeset \
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE} \
-            --parameter-overrides 'Environment=test'
+            --parameter-overrides "AlertEmailAddress=${ALERT_EMAIL_ADDRESS} Environment=test"
 
   build-and-package:
     name: Build and package lambda
@@ -187,6 +204,8 @@ jobs:
           role-skip-session-tagging: true
 
       - name: Deploy to testing account
+        env:
+          ALERT_EMAIL_ADDRESS: ${{ secrets.ALERT_EMAIL_ADDRESS }}
         run: |
           sam deploy --stack-name ${TESTING_STACK_NAME} \
             --template packaged-testing.yaml \
@@ -196,7 +215,7 @@ jobs:
             --s3-prefix ${TESTING_STACK_NAME} \
             --no-fail-on-empty-changeset \
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE} \
-            --parameter-overrides 'Environment=test'
+            --parameter-overrides "AlertEmailAddress=${ALERT_EMAIL_ADDRESS} Environment=test"
 
   deploy-prod:
     name: Deploy to production
@@ -228,6 +247,8 @@ jobs:
           role-skip-session-tagging: true
 
       - name: Deploy to production account
+        env:
+          ALERT_EMAIL_ADDRESS: ${{ secrets.ALERT_EMAIL_ADDRESS }}
         run: |
           sam deploy --stack-name ${PROD_STACK_NAME} \
             --template packaged-prod.yaml \
@@ -236,7 +257,8 @@ jobs:
             --s3-bucket ${PROD_ARTIFACTS_BUCKET} \
             --s3-prefix ${PROD_STACK_NAME} \
             --no-fail-on-empty-changeset \
-            --role-arn ${PROD_CLOUDFORMATION_EXECUTION_ROLE}
+            --role-arn ${PROD_CLOUDFORMATION_EXECUTION_ROLE} \
+            --parameter-overrides "AlertEmailAddress=${ALERT_EMAIL_ADDRESS}"
 
   bump:
     name: Bump the version number and tag the commit

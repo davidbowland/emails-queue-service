@@ -14,6 +14,8 @@ sam build --template ${SAM_TEMPLATE} --use-container -e NODE_ENV=production
 
 # Deploy build lambda
 
+# The alert destination is not committed to the repo; export it before deploying
+ALERT_EMAIL_ADDRESS=${ALERT_EMAIL_ADDRESS:?export ALERT_EMAIL_ADDRESS with the address that receives dead-letter queue alarms}
 TESTING_ARTIFACTS_BUCKET=emails-lambda-test
 TESTING_CLOUDFORMATION_EXECUTION_ROLE="arn:aws:iam::$AWS_ACCOUNT_ID:role/emails-cloudformation-test"
 TESTING_STACK_NAME=emails-queue-service-test
@@ -24,4 +26,4 @@ sam deploy --stack-name ${TESTING_STACK_NAME} \
            --s3-prefix emails-queue-service-test \
            --no-fail-on-empty-changeset \
            --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE} \
-           --parameter-overrides "Environment=test"
+           --parameter-overrides "AlertEmailAddress=$ALERT_EMAIL_ADDRESS Environment=test"
