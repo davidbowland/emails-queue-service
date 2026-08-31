@@ -14,7 +14,9 @@ export NODE_ENV=production
 SAM_TEMPLATE=template.yaml
 sam build --template ${SAM_TEMPLATE}
 
-# Start the service locally
+# Start the service locally. AlertEmailAddressPath is overridden for the same reason deploy.sh
+# overrides it: the template default is the prod path, so omitting it resolves the production
+# alert address against whatever credentials happen to be active.
 export EMAIL_BUCKET=emails-service-storage
 export EMAIL_REGION=us-east-1
-sam local invoke --event events/event-sqs.json --parameter-overrides "Environment=test" --log-file local.log
+sam local invoke --event events/event-sqs.json --parameter-overrides "AlertEmailAddressPath=/emails-queue-service-test/alert-email-address Environment=test" --log-file local.log

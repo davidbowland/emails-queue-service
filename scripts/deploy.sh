@@ -14,8 +14,9 @@ sam build --template ${SAM_TEMPLATE} --use-container -e NODE_ENV=production
 
 # Deploy build lambda
 
-# The alert destination is not committed to the repo; export it before deploying
-ALERT_EMAIL_ADDRESS=${ALERT_EMAIL_ADDRESS:?export ALERT_EMAIL_ADDRESS with the address that receives dead-letter queue alarms}
+# The alert destination lives in SSM Parameter Store and is resolved by CloudFormation at deploy
+# time, so nothing needs to be exported. See "SSM Parameters" in README.md to provision it.
+ALERT_EMAIL_ADDRESS_PATH=/emails-queue-service-test/alert-email-address
 TESTING_ARTIFACTS_BUCKET=emails-lambda-test
 TESTING_CLOUDFORMATION_EXECUTION_ROLE="arn:aws:iam::$AWS_ACCOUNT_ID:role/emails-cloudformation-test"
 TESTING_STACK_NAME=emails-queue-service-test
@@ -26,4 +27,4 @@ sam deploy --stack-name ${TESTING_STACK_NAME} \
            --s3-prefix emails-queue-service-test \
            --no-fail-on-empty-changeset \
            --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE} \
-           --parameter-overrides "AlertEmailAddress=$ALERT_EMAIL_ADDRESS Environment=test"
+           --parameter-overrides "AlertEmailAddressPath=$ALERT_EMAIL_ADDRESS_PATH Environment=test"

@@ -46,6 +46,49 @@ If necessary, retrieve the ARN of the primary MFA device attached to the default
 aws iam list-mfa-devices --query 'MFADevices[].SerialNumber' --output text
 ```
 
+### SSM Parameters
+
+The dead-letter queue alarm topic emails the address stored in SSM Parameter Store. CloudFormation
+resolves it at **deploy time** — `template.yaml`'s `AlertEmailAddressPath` parameter is an
+`AWS::SSM::Parameter::Value<String>` — so no Lambda reads SSM, no function needs `ssm:GetParameter`,
+and nothing here changes at runtime.
+
+**The parameter must exist before every deploy, including the first**, or CloudFormation fails while
+resolving it — delete it later and every subsequent change set fails on an otherwise healthy stack.
+
+Use the address that is already subscribed. A matching value changes nothing and sends no confirmation
+email; any difference makes CloudFormation delete the confirmed subscription and create an unconfirmed
+one, and dead-letter alarms go nowhere until someone clicks the link. Check what is subscribed first:
+
+```bash
+aws sns list-subscriptions --region us-east-1 \
+  --query "Subscriptions[?contains(TopicArn, 'emails-queue-service')].[TopicArn,Endpoint,SubscriptionArn]" \
+  --output table
+```
+
+Then create one parameter per environment. SSM parameters are region-scoped and must live in the
+region the stack deploys to:
+
+```bash
+aws ssm put-parameter --type String --region us-east-1 \
+  --name /emails-queue-service/alert-email-address \
+  --value you@example.com
+
+aws ssm put-parameter --type String --region us-east-1 \
+  --name /emails-queue-service-test/alert-email-address \
+  --value you@example.com
+```
+
+Add `--overwrite` to change an existing value. A change takes effect on the next deploy: CloudFormation
+reads the parameter when it builds the change set, not continuously.
+
+The type is `String`, not `SecureString`: CloudFormation SSM parameter types accept only `String` and
+`StringList`. An email address for alarm mail is not a credential, so nothing is lost.
+
+This repo provisions only its own `/emails-queue-service*/` paths. The **shared** `/emails/*`
+parameters are provisioned from `emails-email-api` — do not write them from here, or two places can
+disagree about the same value.
+
 ## Developing Locally
 
 ### Unit Tests
@@ -70,10 +113,10 @@ npm run lint
 
 Deployment is handled by the GitHub Actions pipeline (`.github/workflows/pipeline.yaml`). On every push, unit tests run first. Pushes to `master` then `sam build` (esbuild, bundling each handler) and `sam package` the stack, deploy it to the testing account, and finally deploy the same packaged template to production. Feature branches instead build and deploy directly to the single shared `emails-queue-service-test` stack (not a stack unique to the branch — concurrent feature branches overwrite whatever was deployed there previously). After a successful production deploy, a final job bumps the package version and pushes the tag.
 
-To build and deploy manually (requires the `developer` role, see Setup above). `ALERT_EMAIL_ADDRESS` is the destination for the dead-letter queue alarms; it is not committed to the repo, and the pipeline supplies it from the `ALERT_EMAIL_ADDRESS` repository secret:
+To build and deploy manually (requires the `developer` role, see Setup above). Nothing needs to be exported: the dead-letter queue alarm address comes from SSM Parameter Store (see [SSM Parameters](#ssm-parameters)), and `npm run deploy` targets the `emails-queue-service-test` stack:
 
 ```bash
-ALERT_EMAIL_ADDRESS=you@example.com npm run deploy
+npm run deploy
 ```
 
 ## Additional Documentation

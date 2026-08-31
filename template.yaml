@@ -6,10 +6,17 @@ Transform:
   - AWS::Serverless-2016-10-31
 
 Parameters:
-  AlertEmailAddress:
-    Type: String
-    NoEcho: true
-    Description: Address that receives dead-letter queue alarm notifications
+  # The address itself lives in SSM Parameter Store; this parameter carries its PATH, and
+  # CloudFormation resolves the value at deploy time. Type String, not SecureString: CloudFormation
+  # SSM parameter types accept only String and StringList, and {{resolve:ssm-secure:...}} is
+  # restricted to an allowlist of properties that does not include an SNS Subscription Endpoint.
+  # No NoEcho: it has no effect on SSM parameter types, which surface the resolved value in stack
+  # events. The path cannot come from Mappings -- Parameters resolve before Mappings are available,
+  # so !FindInMap is unusable in a Default. Prod is the default; test and feature deploys override it.
+  AlertEmailAddressPath:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /emails-queue-service/alert-email-address
+    Description: SSM Parameter Store path holding the address that receives dead-letter queue alarm notifications
   Environment:
     Type: String
     Default: prod
@@ -280,7 +287,8 @@ Resources:
     Type: AWS::SNS::Topic
     Properties:
       Subscription:
-        - Endpoint: !Ref AlertEmailAddress
+        # !Ref on an SSM parameter type yields the resolved value, not the path
+        - Endpoint: !Ref AlertEmailAddressPath
           Protocol: email
       Tags:
         - Key: 'created-by'
